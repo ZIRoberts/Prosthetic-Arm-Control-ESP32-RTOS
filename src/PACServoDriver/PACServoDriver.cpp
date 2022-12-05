@@ -136,9 +136,10 @@ uint8_t PACServoDriver::getDriveLimit(uint8_t finger){
 }
 
 /**
- * @brief 
+ * @brief Returns if the movement of the specified finger is blocked or unblocked.
+ *        Returns true (blocked) if the finger is unknown
  * 
- * @param finger 
+ * @param finger PWM channel number corresponding to the specified finger 
  * @return true Returned when the motion of the finger is blocked by an object
  * @return false Returned when then finger can move freely
  */

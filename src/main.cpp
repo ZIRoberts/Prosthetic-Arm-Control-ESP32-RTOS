@@ -6,8 +6,6 @@
  *     
  *      This program is used to control the Prosthetic Arm created in 
  *      collaboration with York College of Pennsylvania Capstone course.
- *      It requires the hardware found at *insert github link*
- *      to function properly. It can be found 
  */
 #include <Arduino.h>
 #include <../lib/ESP32AnalogRead/ESP32AnalogRead.h>
