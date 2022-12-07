@@ -1,5 +1,5 @@
 /*
- *  Prosthetic Arm Control (P.A.c) Motor Driver
+ *  Prosthetic Arm Control (P.A.C) Motor Driver
  *
  *  Created on: 24 Nov, 2022
  *      Author: Zachary Roberts (zroberts1@ycp.edu)
@@ -60,7 +60,7 @@ void PACServoDriver::openHand(){
  */
 void PACServoDriver::largeDiameter(){
     for(int i = 0; i < 5; i++){
-        setDutyCycle(i, MOTOR_Max);
+        setDutyCycle(i, SERVO_Max);
     }
 
     Serial.println("smallDiameter");
@@ -73,8 +73,22 @@ void PACServoDriver::largeDiameter(){
 void PACServoDriver::indexFingerPointing(){
     for (int i = 0; i < 5; i++){
         if (i != FINGER_INDEX_CHANNEL){
-            setDutyCycle(i, MOTOR_Max);
+            setDutyCycle(i, SERVO_Max);
         }
+    }
+}
+
+/*******************************************************************************
+ * Safety Functions
+*******************************************************************************/
+
+/**
+ * @brief 
+ * 
+ */
+void PACServoDriver::stopAllMotion(){
+    for (int i = 0; i < 5; i++){
+        setDutyCycle(i, SERVO_STOP); 
     }
 }
 
