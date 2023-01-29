@@ -7,42 +7,31 @@
  *      This program is used to control the Prosthetic Arm created in 
  *      collaboration with York College of Pennsylvania Capstone course.
  */
+
+#include "config.h"
 #include <Arduino.h>
 #include <../lib/ESP32AnalogRead/ESP32AnalogRead.h>
 #include <PACServoDriver/PACServoDriver.h> // Motor control libary for prosehtic arm
+#include <PACCurrentSense/PACCurrentSense.h> // Current sense library for prosethic arm
 #include <deque> // C++ libraries are not native to arduino, included within ESPIDF
 
-//Defines
-#define MAX_DUFFER_SIZE 499 // Sets max buffer size to 5 seconds, 1 sec = 100 samples
-#define FEEDBACK_THRESHOLD 2000 // Max value for feedback collision is 20000 millivolts
-
 // Creates Servo Driver Object
-static PACServoDriver servoController; 
+static PACServoDriver servoController;
+
+static PACCurrentSense currentSense; 
 
 // Creates ADC objects
 static ESP32AnalogRead myoware1; // Myoware Sensor Inside Fore arm
 static ESP32AnalogRead myoware2; // Myoware Sensor Outside Fore arm
-static ESP32AnalogRead senseThumbCurrent; 
-static ESP32AnalogRead senseIndexCurrent;
-static ESP32AnalogRead senseMiddleCurrent;
-static ESP32AnalogRead senseRingCurrent;
-static ESP32AnalogRead sensePinkyCurrent;
 static ESP32AnalogRead thumbFeedback;
 static ESP32AnalogRead indexFeedback;
 static ESP32AnalogRead middleFeedback;
 static ESP32AnalogRead ringFeedback;
 static ESP32AnalogRead pinkyFeedback;
-
+uint16_t totalCurrent;
 // Buffer definitions
 static std::deque<double> myo1Buffer; // Buffer for inside forearm Myoware Sensor
 static std::deque<double> myo2Buffer; // Buffer for outside forearm Myoware Sensor
-
-//stores ADC reading current sensor
-// static uint16_t thumbCurrent;
-// static uint16_t indexCurrent;
-// static uint16_t middleCurrent;
-// static uint16_t ringCurrent;
-// static uint16_t pinkyCurrent;
 
 /**
  * @brief updateServoMotors: Updates the position of the servo motors based on the
@@ -92,7 +81,7 @@ void readMyoSensor(void *pvParameter){
 
     //Serial.println(myo1Buffer.back());
 
-    // Delays the task for 10 ms (100 hZ)
+    // Delays the task for 10 ms (100 Hz)
     vTaskDelay(10 * portTICK_PERIOD_MS );
   }
 }
@@ -103,39 +92,66 @@ void readMyoSensor(void *pvParameter){
  * @param pvParameter 
  */
 void chkHandCollision(void *pvParameter){
-  
-  //TODO: Add Hysteresis to the feedback sensor
+   while(1){ 
+    //TODO: Add Hysteresis to the feedback sensor
+    // Voltage can be converted to force in grams using the fallowing equation
+    // grams = pow((271/(47000*((3.3/(miliVolts/1000)) -1 ))),(1/0.69))
 
-  // Voltage can be converted to force in grams using the fallowing equation
-  //  grams = pow((271/(47000*((3.3/(miliVolts/1000)) -1 ))),(1/0.69))
-  if (thumbFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-    servoController.thumbBlocked = true;
-  } else{
-    servoController.thumbBlocked = false;
+
+    // Checks if any of the fingers have collided with an object
+    if (thumbFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
+      servoController.thumbBlocked = true;
+    } else{
+      servoController.thumbBlocked = false;
+    }
+
+    if (indexFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
+      servoController.indexBlocked = true;
+    } else{
+      servoController.indexBlocked = false;
+    }
+
+    if (middleFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
+      servoController.middleBlocked = true;
+    } else{
+      servoController.middleBlocked = false;
+    }
+
+    if (ringFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
+      servoController.ringBlocked = true;
+    } else{
+      servoController.ringBlocked = false;
+    }
+
+    if (pinkyFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
+      servoController.pinkyBlocked = true;
+    } else{
+      servoController.pinkyBlocked = false;
+    }
+     // Delays the task for 100 ms (10 Hz)
+    vTaskDelay(100 * portTICK_PERIOD_MS );
   }
+}
 
-  if (indexFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-    servoController.indexBlocked = true;
-  } else{
-    servoController.indexBlocked = false;
-  }
+/**
+ * @brief 
+ * 
+ * @param pvParameter 
+ */
+void chkMotorCurrent(void *pvParameter){
+  while(1){
+    //read current draw from all fingers
+    currentSense.readAllFingerCurrents();
 
-  if (middleFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-    servoController.middleBlocked = true;
-  } else{
-    servoController.middleBlocked = false;
-  }
+    // Compare total current to safety threshold
+    if (currentSense.calculateTotalCurrent() > MAX_SERVO_CURRENT ){
+      //Emergency Stop if current draw surpasses safety threshold
+      servoController.stopAllMotion();
+    }
 
-  if (ringFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-    servoController.ringBlocked = true;
-  } else{
-    servoController.ringBlocked = false;
-  }
-
-  if (pinkyFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-    servoController.pinkyBlocked = true;
-  } else{
-    servoController.pinkyBlocked = false;
+    //THIS DELAY IS TEMPORARY FOR TESTING WILL BE REASSESSED MOVING FORWARD
+    // Delays the task for 10 ms (100 Hz)
+    vTaskDelay(10 * portTICK_PERIOD_MS );
   }
 }
 
@@ -148,13 +164,6 @@ void setup() {
   // Attach ADC object to GPIO pins
   myoware1.attach(8); // Myoware 1 is attached to GPIO 1
   myoware2.attach(7); // Myoware 2 is attached to GPIO 2
-
-  // Attach current sensors to GPIO pins
-  senseThumbCurrent.attach(12);
-  senseIndexCurrent.attach(11);
-  senseMiddleCurrent.attach(9);
-  senseRingCurrent.attach(6);
-  sensePinkyCurrent.attach(4);
 
   // Attach Feedback sensors to GPIO pins
   thumbFeedback.attach(14);
@@ -180,7 +189,7 @@ void setup() {
       "Read Myoware Sensors",   // Name of task
       1024,         // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,         // Parameter to pass to function
-      2,            // Task priority (0 to configMAX_PRIORITIES - 1)
+      3,            // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,     // Task handle
       0);           // Run on core 1
 
@@ -189,12 +198,18 @@ void setup() {
       "Check Hand Collsion",   // Name of task
       1024,         // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,         // Parameter to pass to function
-      1,            // Task priority (0 to configMAX_PRIORITIES - 1)
+      2,            // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,     // Task handle
       0);           // Run on core 1
 
-  //TODO: Create task for current sensor
-
+    xTaskCreatePinnedToCore(  // Use xTaskCreate() in vanilla FreeRTOS
+      chkMotorCurrent,     // Function to be called
+      "Check motor current",   // Name of task
+      1024,         // Stack size (bytes in ESP32, words in FreeRTOS)
+      NULL,         // Parameter to pass to function
+      2,            // Task priority (0 to configMAX_PRIORITIES - 1)
+      &xHandle,     // Task handle
+      0);           // Run on core 1
   //TODO: Create task for data processing   
 }
 
