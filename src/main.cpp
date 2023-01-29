@@ -23,27 +23,15 @@ static PACCurrentSense currentSense;
 // Creates ADC objects
 static ESP32AnalogRead myoware1; // Myoware Sensor Inside Fore arm
 static ESP32AnalogRead myoware2; // Myoware Sensor Outside Fore arm
-// static ESP32AnalogRead senseThumbCurrent; 
-// static ESP32AnalogRead senseIndexCurrent;
-// static ESP32AnalogRead senseMiddleCurrent;
-// static ESP32AnalogRead senseRingCurrent;
-// static ESP32AnalogRead sensePinkyCurrent;
 static ESP32AnalogRead thumbFeedback;
 static ESP32AnalogRead indexFeedback;
 static ESP32AnalogRead middleFeedback;
 static ESP32AnalogRead ringFeedback;
 static ESP32AnalogRead pinkyFeedback;
-
+uint16_t totalCurrent;
 // Buffer definitions
 static std::deque<double> myo1Buffer; // Buffer for inside forearm Myoware Sensor
 static std::deque<double> myo2Buffer; // Buffer for outside forearm Myoware Sensor
-
-//stores ADC reading current sensor
-// static uint16_t thumbCurrent;
-// static uint16_t indexCurrent;
-// static uint16_t middleCurrent;
-// static uint16_t ringCurrent;
-// static uint16_t pinkyCurrent;
 
 /**
  * @brief updateServoMotors: Updates the position of the servo motors based on the
@@ -93,7 +81,7 @@ void readMyoSensor(void *pvParameter){
 
     //Serial.println(myo1Buffer.back());
 
-    // Delays the task for 10 ms (100 hZ)
+    // Delays the task for 10 ms (100 Hz)
     vTaskDelay(10 * portTICK_PERIOD_MS );
   }
 }
@@ -104,39 +92,44 @@ void readMyoSensor(void *pvParameter){
  * @param pvParameter 
  */
 void chkHandCollision(void *pvParameter){
-  
-  //TODO: Add Hysteresis to the feedback sensor
+   while(1){ 
+    //TODO: Add Hysteresis to the feedback sensor
+    // Voltage can be converted to force in grams using the fallowing equation
+    // grams = pow((271/(47000*((3.3/(miliVolts/1000)) -1 ))),(1/0.69))
 
-  // Voltage can be converted to force in grams using the fallowing equation
-  //  grams = pow((271/(47000*((3.3/(miliVolts/1000)) -1 ))),(1/0.69))
-  if (thumbFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-    servoController.thumbBlocked = true;
-  } else{
-    servoController.thumbBlocked = false;
-  }
 
-  if (indexFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-    servoController.indexBlocked = true;
-  } else{
-    servoController.indexBlocked = false;
-  }
+    // Checks if any of the fingers have collided with an object
+    if (thumbFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
+      servoController.thumbBlocked = true;
+    } else{
+      servoController.thumbBlocked = false;
+    }
 
-  if (middleFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-    servoController.middleBlocked = true;
-  } else{
-    servoController.middleBlocked = false;
-  }
+    if (indexFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
+      servoController.indexBlocked = true;
+    } else{
+      servoController.indexBlocked = false;
+    }
 
-  if (ringFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-    servoController.ringBlocked = true;
-  } else{
-    servoController.ringBlocked = false;
-  }
+    if (middleFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
+      servoController.middleBlocked = true;
+    } else{
+      servoController.middleBlocked = false;
+    }
 
-  if (pinkyFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-    servoController.pinkyBlocked = true;
-  } else{
-    servoController.pinkyBlocked = false;
+    if (ringFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
+      servoController.ringBlocked = true;
+    } else{
+      servoController.ringBlocked = false;
+    }
+
+    if (pinkyFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
+      servoController.pinkyBlocked = true;
+    } else{
+      servoController.pinkyBlocked = false;
+    }
+     // Delays the task for 100 ms (10 Hz)
+    vTaskDelay(100 * portTICK_PERIOD_MS );
   }
 }
 
@@ -146,14 +139,19 @@ void chkHandCollision(void *pvParameter){
  * @param pvParameter 
  */
 void chkMotorCurrent(void *pvParameter){
+  while(1){
+    //read current draw from all fingers
+    currentSense.readAllFingerCurrents();
 
-  //read current draw from all fingers
-  currentSense.readAllFingerCurrents();
+    // Compare total current to safety threshold
+    if (currentSense.calculateTotalCurrent() > MAX_SERVO_CURRENT ){
+      //Emergency Stop if current draw surpasses safety threshold
+      servoController.stopAllMotion();
+    }
 
-  // Compare total current to safety threshold
-  if (currentSense.calculateTotalCurrent() > MAX_SERVO_CURRENT ){
-    //Emergency Stop if current draw surpasses safety threshold
-    servoController.stopAllMotion();
+    //THIS DELAY IS TEMPORARY FOR TESTING WILL BE REASSESSED MOVING FORWARD
+    // Delays the task for 10 ms (100 Hz)
+    vTaskDelay(10 * portTICK_PERIOD_MS );
   }
 }
 

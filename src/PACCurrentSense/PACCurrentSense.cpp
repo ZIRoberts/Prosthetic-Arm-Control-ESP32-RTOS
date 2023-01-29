@@ -10,7 +10,7 @@
  *      York College of Pennsylvania Capstone Course
  */
 
-#include "PACCurrentSense.h";
+#include "PACCurrentSense.h"
 
 PACCurrentSense::PACCurrentSense(){
     //Initializes the ADC pins to their respective fingers
@@ -20,14 +20,19 @@ PACCurrentSense::PACCurrentSense(){
     senseRingCurrent.attach(6);
     sensePinkyCurrent.attach(4);
 
-    //intilzis current readings to 0
+    //initializes current readings to 0
     thumbCurrent = 0;
     indexCurrent = 0;
     middleCurrent = 0;
     ringCurrent = 0;
     pinkyCurrent = 0;
-    }
+}
 
+/**
+ * @brief Sums the total current voltage readings and converts to current
+ * 
+ * @return uint16_t Total current consumed by all motors in mili-amperes
+ */
 uint16_t PACCurrentSense::calculateTotalCurrent() {
     //calculate total current in millivolts
     uint16_t totalVolts = thumbCurrent + indexCurrent + middleCurrent 
@@ -39,6 +44,11 @@ uint16_t PACCurrentSense::calculateTotalCurrent() {
     return totalCurrent;
 }
 
+/**
+ * @brief Reads in the current state in voltage. Sets corresponding global
+ *        variable to be accessed from main function
+ * 
+ */
 void PACCurrentSense::readAllFingerCurrents(){
     thumbCurrent = senseCurrent(FINGER_THUMB_CHANNEL);
     indexCurrent = senseCurrent(FINGER_INDEX_CHANNEL);
@@ -47,6 +57,12 @@ void PACCurrentSense::readAllFingerCurrents(){
     pinkyCurrent = senseCurrent(FINGER_PINKY_CHANNEL);
 }
 
+/**
+ * @brief 
+ * 
+ * @param finger 
+ * @return uint16_t 
+ */
 uint16_t PACCurrentSense::senseCurrent(uint8_t finger){
     switch(finger){
         case 0: // Thumb

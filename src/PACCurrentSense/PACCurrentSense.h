@@ -1,7 +1,7 @@
 #pragma once
 
 #include <../lib/ESP32AnalogRead/ESP32AnalogRead.h>
-
+#include <Arduino.h>
 //Defines Constant for PWM Channels
 //Used to identify which finger an object is to operate on
 #define FINGER_THUMB_CHANNEL 0
@@ -14,11 +14,15 @@
 class PACCurrentSense {
 private :
     //ADC Objects
-    static ESP32AnalogRead senseThumbCurrent; 
-    static ESP32AnalogRead senseIndexCurrent;
-    static ESP32AnalogRead senseMiddleCurrent;
-    static ESP32AnalogRead senseRingCurrent;
-    static ESP32AnalogRead sensePinkyCurrent;
+    ESP32AnalogRead senseThumbCurrent; 
+    ESP32AnalogRead senseIndexCurrent;
+    ESP32AnalogRead senseMiddleCurrent;
+    ESP32AnalogRead senseRingCurrent;
+    ESP32AnalogRead sensePinkyCurrent;
+
+public :    
+    // Constructor
+    PACCurrentSense();
 
     //stores ADC reading current sensor
     uint16_t thumbCurrent;
@@ -26,10 +30,6 @@ private :
     uint16_t middleCurrent;
     uint16_t ringCurrent;
     uint16_t pinkyCurrent;
-
-public :    
-    // Constructor
-    PACCurrentSense();
 
     void readAllFingerCurrents();
     uint16_t calculateTotalCurrent();

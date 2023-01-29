@@ -50,7 +50,7 @@ PACServoDriver::PACServoDriver(){
  */
 void PACServoDriver::openHand(){
     for(int i = 0; i < 5; i++){
-        setDutyCycle(i, MOTOR_HOME);
+        setDutyCycle(i, SERVO_HOME);
     }
 }
 
@@ -83,8 +83,8 @@ void PACServoDriver::indexFingerPointing(){
 *******************************************************************************/
 
 /**
- * @brief 
- * 
+ * @brief  Stops all motors by setting the duty cycle of each motor to zero. 
+ *         motors will remain in current position until instructed otherwise
  */
 void PACServoDriver::stopAllMotion(){
     for (int i = 0; i < 5; i++){
@@ -146,7 +146,7 @@ uint8_t PACServoDriver::getDriveLimit(uint8_t finger){
     }
 
     // Returns home position for any unknown finger
-    return MOTOR_HOME;
+    return SERVO_HOME;
 }
 
 /**
