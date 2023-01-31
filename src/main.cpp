@@ -15,9 +15,8 @@
 #include <PACCurrentSense/PACCurrentSense.h> // Current sense library for prosethic arm
 #include <deque> // C++ libraries are not native to arduino, included within ESPIDF
 
-// Creates Servo Driver Object
+// Creates Servo Driver and Current Sense Object
 static PACServoDriver servoController;
-
 static PACCurrentSense currentSense; 
 
 // Creates ADC objects
@@ -62,7 +61,7 @@ void updateServoMotors(void *pvParameter){
  * @brief Reads the output of the electromyographic sensors and 
  *        updates the buffers.
  * 
- * @param pvParameter 
+ * @param pvParameter Void Pointer 
  */
 void readMyoSensor(void *pvParameter){
   while(1){
@@ -89,7 +88,7 @@ void readMyoSensor(void *pvParameter){
 /**
  * @brief chkHandCollision: Checks if any of the fingers have collided with and object
  * 
- * @param pvParameter 
+ * @param pvParameter Void Pointer 
  */
 void chkHandCollision(void *pvParameter){
    while(1){ 
@@ -134,9 +133,10 @@ void chkHandCollision(void *pvParameter){
 }
 
 /**
- * @brief 
+ * @brief Sums the current of all servo motors, blocks all servo motors if it 
+ *        total current is greater than predefined MAX_SERVO_CURRENT
  * 
- * @param pvParameter 
+ * @param pvParameter Void Pointer 
  */
 void chkMotorCurrent(void *pvParameter){
   while(1){
@@ -155,6 +155,10 @@ void chkMotorCurrent(void *pvParameter){
   }
 }
 
+/**
+ * @brief Sets up configures and initializes all necessary objects and tasks
+ * 
+ */
 void setup() {
   Serial.begin(115200);
 
@@ -210,6 +214,7 @@ void setup() {
       2,            // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,     // Task handle
       0);           // Run on core 1
+      
   //TODO: Create task for data processing   
 }
 

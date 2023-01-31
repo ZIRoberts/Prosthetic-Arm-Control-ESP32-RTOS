@@ -12,6 +12,11 @@
 
 #include "PACCurrentSense.h"
 
+/**
+ * @brief Construct a new PACCurrentSense::PACCurrentSense object
+ *        Attaches ADC objects to the corresponding current sense circuit pins
+ *        Initializes current readings to 0 mv
+ */
 PACCurrentSense::PACCurrentSense(){
     //Initializes the ADC pins to their respective fingers
     senseThumbCurrent.attach(12);
@@ -58,10 +63,10 @@ void PACCurrentSense::readAllFingerCurrents(){
 }
 
 /**
- * @brief 
+ * @brief Senses the current in volts from the current sense circuit
  * 
- * @param finger 
- * @return uint16_t 
+ * @param finger number corresponding to the finger to be measured
+ * @return uint16_t current measured in millivolts
  */
 uint16_t PACCurrentSense::senseCurrent(uint8_t finger){
     switch(finger){
@@ -82,7 +87,7 @@ uint16_t PACCurrentSense::senseCurrent(uint8_t finger){
             break;
     }
 
-    // returns max 16 bit value if the request finger is undefined will block
+    // returns max 16 bit value if the requested finger is undefined will block
     // all operations from occurring on the arm until resolved. 
     return 65535;
 }
