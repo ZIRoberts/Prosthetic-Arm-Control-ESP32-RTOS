@@ -3,8 +3,8 @@
 #include <Arduino.h>
 
 // General PWM Configuration
-#define PWM_FREQ 333 // Sets 333 Hz
-#define PWM_RESOLUTION 8 // Sets 8 bit resolution
+#define PWM_FREQ 333 // Sets 333 Hz frequency for PWM 
+#define PWM_RESOLUTION 8 // Sets 8 bit resolution for PWM
 
 //Defines PWM Pins
 #define FINGER_THUMB_GPIO 42
