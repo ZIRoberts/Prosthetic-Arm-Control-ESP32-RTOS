@@ -13,28 +13,26 @@
 #include <../lib/ESP32AnalogRead/ESP32AnalogRead.h>
 #include <PACServoDriver/PACServoDriver.h> // Motor control libary for prosehtic arm
 #include <PACCurrentSense/PACCurrentSense.h> // Current sense library for prosethic arm
+#include <PACFSRFeedback/PACFSRFeedback.h> // FSR Feedback library for prosethic arm
 #include <deque> // C++ libraries are not native to arduino, included within ESPIDF
 
 // Creates Servo Driver and Current Sense Object
 static PACServoDriver servoController;
 static PACCurrentSense currentSense; 
+static PACFSRFeedback fsrFeedback;
 
 // Creates ADC objects
 static ESP32AnalogRead myoware1; // Myoware Sensor Inside Fore arm
 static ESP32AnalogRead myoware2; // Myoware Sensor Outside Fore arm
-static ESP32AnalogRead thumbFeedback;
-static ESP32AnalogRead indexFeedback;
-static ESP32AnalogRead middleFeedback;
-static ESP32AnalogRead ringFeedback;
-static ESP32AnalogRead pinkyFeedback;
 uint16_t totalCurrent;
+
 // Buffer definitions
 static std::deque<double> myo1Buffer; // Buffer for inside forearm Myoware Sensor
 static std::deque<double> myo2Buffer; // Buffer for outside forearm Myoware Sensor
 
 /**
- * @brief updateServoMotors: Updates the position of the servo motors based on the
- *        result of signal processing. Currently only a simple threshold comparision
+ * @brief Updates the position of the servo motors based on the result of the
+ *        signal processing. Currently only a simple threshold comparision
  *        is implemented.
  * 
  * @param pvParameter Void Pointer 
@@ -81,7 +79,7 @@ void readMyoSensor(void *pvParameter){
     //Serial.println(myo1Buffer.back());
 
     // Delays the task for 10 ms (100 Hz)
-    vTaskDelay(10 * portTICK_PERIOD_MS );
+    vTaskDelay(10 * portTICK_PERIOD_MS);
   }
 }
 
@@ -93,42 +91,9 @@ void readMyoSensor(void *pvParameter){
 void chkHandCollision(void *pvParameter){
    while(1){ 
     //TODO: Add Hysteresis to the feedback sensor
-    // Voltage can be converted to force in grams using the fallowing equation
-    // grams = pow((271/(47000*((3.3/(miliVolts/1000)) -1 ))),(1/0.69))
-
-
-    // Checks if any of the fingers have collided with an object
-    if (thumbFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-      servoController.thumbBlocked = true;
-    } else{
-      servoController.thumbBlocked = false;
-    }
-
-    if (indexFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-      servoController.indexBlocked = true;
-    } else{
-      servoController.indexBlocked = false;
-    }
-
-    if (middleFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-      servoController.middleBlocked = true;
-    } else{
-      servoController.middleBlocked = false;
-    }
-
-    if (ringFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-      servoController.ringBlocked = true;
-    } else{
-      servoController.ringBlocked = false;
-    }
-
-    if (pinkyFeedback.readMilliVolts() > FEEDBACK_THRESHOLD){
-      servoController.pinkyBlocked = true;
-    } else{
-      servoController.pinkyBlocked = false;
-    }
+    
      // Delays the task for 100 ms (10 Hz)
-    vTaskDelay(100 * portTICK_PERIOD_MS );
+    vTaskDelay(100 * portTICK_PERIOD_MS);
   }
 }
 
@@ -151,7 +116,7 @@ void chkMotorCurrent(void *pvParameter){
 
     //THIS DELAY IS TEMPORARY FOR TESTING WILL BE REASSESSED MOVING FORWARD
     // Delays the task for 10 ms (100 Hz)
-    vTaskDelay(10 * portTICK_PERIOD_MS );
+    vTaskDelay(10 * portTICK_PERIOD_MS);
   }
 }
 
@@ -160,6 +125,7 @@ void chkMotorCurrent(void *pvParameter){
  * 
  */
 void setup() {
+  // Starts serial communication at 115200 baud rate
   Serial.begin(115200);
 
   // Set CPU clock to 80MHz
@@ -168,13 +134,6 @@ void setup() {
   // Attach ADC object to GPIO pins
   myoware1.attach(8); // Myoware 1 is attached to GPIO 1
   myoware2.attach(7); // Myoware 2 is attached to GPIO 2
-
-  // Attach Feedback sensors to GPIO pins
-  thumbFeedback.attach(14);
-  indexFeedback.attach(13);
-  middleFeedback.attach(10);
-  ringFeedback.attach(5);
-  pinkyFeedback.attach(3);
 
   // Create RTOS Tasks 
   TaskHandle_t xHandle = NULL;
