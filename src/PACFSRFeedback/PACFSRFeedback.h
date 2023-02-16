@@ -21,7 +21,7 @@ private :
     ESP32AnalogRead ringFeedback;
     ESP32AnalogRead pinkyFeedback;
 
-    //
+    //FSR Input in Ohms 
     uint16_t thumbFeedbackRaw;
     uint16_t indexFeedbackRaw;
     uint16_t middleFeedbackRaw;
@@ -32,7 +32,7 @@ public :
     // Constructor
     PACFSRFeedback();
 
-    //
+    //FSR Input converted from Ohms to Grams 
     uint16_t thumbFeedbackGrams;
     uint16_t indexFeedbackGrams;
     uint16_t middleFeedbackGrams;
