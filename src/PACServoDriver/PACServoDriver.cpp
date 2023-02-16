@@ -62,8 +62,6 @@ void PACServoDriver::largeDiameter(){
     for(int i = 0; i < 5; i++){
         setDutyCycle(i, SERVO_Max);
     }
-
-    Serial.println("smallDiameter");
 }
 
 /**

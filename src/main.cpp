@@ -98,8 +98,6 @@ void readMyoSensor(void *pvParameter) {
  */
 void chkHandCollision(void *pvParameter) {
   while (1) {
-    // TODO: Add Hysteresis to the feedback sensor
-
     // Call functions to read in FSR values and convert to grams
     fsrFeedback.readAllFingerFeedback();
     fsrFeedback.calculateFeedbackGrams();
@@ -109,20 +107,6 @@ void chkHandCollision(void *pvParameter) {
     uint16_t threshold = 200;
 
     // Hysteresis for read in FSR values
-    //  uint16_t marginThreshold = margin + threshold;
-
-    // if(fsrFeedback.indexFeedbackGrams >= (marginThreshold)){
-    //   hysteresis = true;
-    // } else if(fsrFeedback.middleFeedbackGrams >= (marginThreshold)){
-    //   hysteresis = true;
-    // } else if(fsrFeedback.thumbFeedbackGrams >= (marginThreshold)){
-    //   hysteresis = true;
-    // } else if(fsrFeedback.ringFeedbackGrams >= (marginThreshold)){
-    //   hysteresis = true;
-    // } else if(fsrFeedback.pinkyFeedbackGrams >= (marginThreshold)){
-    //   hysteresis = true;
-    // }
-
     if (hysteresis) {
       uint16_t marginThreshold = margin - threshold;
       if (fsrFeedback.indexFeedbackGrams <= (marginThreshold)) {
@@ -135,38 +119,24 @@ void chkHandCollision(void *pvParameter) {
         hysteresis = false;
       } else if (fsrFeedback.pinkyFeedbackGrams <= (marginThreshold)) {
         hysteresis = false;
-      } else {
-        uint16_t marginThreshold = margin + threshold;
-        if (fsrFeedback.indexFeedbackGrams >= (marginThreshold)) {
-          hysteresis = true;
-        } else if (fsrFeedback.middleFeedbackGrams >= (marginThreshold)) {
-          hysteresis = true;
-        } else if (fsrFeedback.thumbFeedbackGrams >= (marginThreshold)) {
-          hysteresis = true;
-        } else if (fsrFeedback.ringFeedbackGrams >= (marginThreshold)) {
-          hysteresis = true;
-        } else if (fsrFeedback.pinkyFeedbackGrams >= (marginThreshold)) {
-          hysteresis = true;
-        }
       }
-
-      // uint16_t marginThreshold = margin - threshold;
-
-      // if (fsrFeedback.indexFeedbackGrams <= (marginThreshold)){
-      //   hysteresis = false;
-      // } else if (fsrFeedback.middleFeedbackGrams <= (marginThreshold)){
-      //   hysteresis = false;
-      // } else if (fsrFeedback.thumbFeedbackGrams <= (marginThreshold)){
-      //   hysteresis = false;
-      // } else if (fsrFeedback.ringFeedbackGrams <= (marginThreshold)){
-      //   hysteresis = false;
-      // } else if (fsrFeedback.pinkyFeedbackGrams <= (marginThreshold)){
-      //   hysteresis = false;
-      // }
-
-      // Delays the task for 100 ms (10 Hz)
-      vTaskDelay(100 * portTICK_PERIOD_MS);
+    } else {
+      uint16_t marginThreshold = margin + threshold;
+      if (fsrFeedback.indexFeedbackGrams >= (marginThreshold)) {
+        hysteresis = true;
+      } else if (fsrFeedback.middleFeedbackGrams >= (marginThreshold)) {
+        hysteresis = true;
+      } else if (fsrFeedback.thumbFeedbackGrams >= (marginThreshold)) {
+        hysteresis = true;
+      } else if (fsrFeedback.ringFeedbackGrams >= (marginThreshold)) {
+        hysteresis = true;
+      } else if (fsrFeedback.pinkyFeedbackGrams >= (marginThreshold)) {
+        hysteresis = true;
+      }
     }
+
+    // Delays the task for 100 ms (10 Hz)
+    vTaskDelay(100 * portTICK_PERIOD_MS);
   }
 }
 
@@ -187,7 +157,6 @@ void chkMotorCurrent(void *pvParameter) {
       servoController.stopAllMotion();
     }
 
-    // THIS DELAY IS TEMPORARY FOR TESTING WILL BE REASSESSED MOVING FORWARD
     //  Delays the task for 10 ms (100 Hz)
     vTaskDelay(10 * portTICK_PERIOD_MS);
   }
