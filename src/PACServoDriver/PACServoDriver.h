@@ -1,11 +1,10 @@
 #pragma once
+
 #include <Arduino.h>
-#include <string.h>
 
 // General PWM Configuration
-#define PWM_FREQ 333 // Sets 333 Hz
-#define PWM_RESOLUTION 8 // Sets 8 bit resolution
-#define MOTOR_HOME 50 // 20% duty cycle @8 bit resolution
+#define PWM_FREQ 333 // Sets 333 Hz frequency for PWM 
+#define PWM_RESOLUTION 8 // Sets 8 bit resolution for PWM
 
 //Defines PWM Pins
 #define FINGER_THUMB_GPIO 42
@@ -21,9 +20,10 @@
 #define FINGER_RING_CHANNEL 3
 #define FINGER_PINKY_CHANNEL 4
 
-//Defines Drive limits for motors
-#define MOTOR_HOME 50 // 20% duty cycle @8 bit resolution
-#define MOTOR_Max 205 // 80% duty cycle @8 bit resolution
+//Defines Drive limits for servos
+#define SERVO_HOME 50 // 20% duty cycle @8 bit resolution
+#define SERVO_Max 205 // 80% duty cycle @8 bit resolution
+#define SERVO_STOP 0 // Servos Stop moving and freeze in place
 
 // Max Distance Drivable
 // This limits the distance each finger can drive as each finger in unique
@@ -48,7 +48,6 @@ private :
 public :    
     // Initialization
     PACServoDriver();
-	~PACServoDriver(){}
     
     //Variables
     uint8_t driveSpeed;
@@ -70,6 +69,9 @@ public :
     // void thumbIndexFinger();
     // void tripod();
     // void prehensileSphere();
+
+    //Saftey functions
+    void stopAllMotion();
 
     // utility functions
     void setDriveSpeed(uint8_t speed);

@@ -1,5 +1,5 @@
 /*
- *  Prosthetic Arm Control (P.A.c) Motor Driver
+ *  Prosthetic Arm Control (P.A.C) Motor Driver
  *
  *  Created on: 24 Nov, 2022
  *      Author: Zachary Roberts (zroberts1@ycp.edu)
@@ -50,7 +50,7 @@ PACServoDriver::PACServoDriver(){
  */
 void PACServoDriver::openHand(){
     for(int i = 0; i < 5; i++){
-        setDutyCycle(i, MOTOR_HOME);
+        setDutyCycle(i, SERVO_HOME);
     }
 }
 
@@ -60,10 +60,8 @@ void PACServoDriver::openHand(){
  */
 void PACServoDriver::largeDiameter(){
     for(int i = 0; i < 5; i++){
-        setDutyCycle(i, MOTOR_Max);
+        setDutyCycle(i, SERVO_Max);
     }
-
-    Serial.println("smallDiameter");
 }
 
 /**
@@ -73,8 +71,22 @@ void PACServoDriver::largeDiameter(){
 void PACServoDriver::indexFingerPointing(){
     for (int i = 0; i < 5; i++){
         if (i != FINGER_INDEX_CHANNEL){
-            setDutyCycle(i, MOTOR_Max);
+            setDutyCycle(i, SERVO_Max);
         }
+    }
+}
+
+/*******************************************************************************
+ * Safety Functions
+*******************************************************************************/
+
+/**
+ * @brief  Stops all motors by setting the duty cycle of each motor to zero. 
+ *         motors will remain in current position until instructed otherwise
+ */
+void PACServoDriver::stopAllMotion(){
+    for (int i = 0; i < 5; i++){
+        setDutyCycle(i, SERVO_STOP); 
     }
 }
 
@@ -132,7 +144,7 @@ uint8_t PACServoDriver::getDriveLimit(uint8_t finger){
     }
 
     // Returns home position for any unknown finger
-    return MOTOR_HOME;
+    return SERVO_HOME;
 }
 
 /**
