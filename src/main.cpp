@@ -2,7 +2,7 @@
  *  Prosthetic Arm Control (P.A.c) ESP32S2 RTOS
  *
  *  Created on: 24 Nov, 2022
- *      Author: Zachary Roberts(zroberts1@ycp.edu)
+ *      Author: Zachary Roberts
  *
  *      This program is used to control the Prosthetic Arm created in
  *      collaboration with York College of Pennsylvania Capstone course.
@@ -46,7 +46,8 @@ static bool hysteresis;
  */
 void updateServoMotors(void *pvParameter) {
   while (1) {
-    // checks most recent sensor readings to determine the desired hand position
+    // checks most recent sensor readings to determine the desired
+    // hand position
     if (myo1Buffer.back() > 1000) {
       // sets hand to largeDiameter position
       servoController.largeDiameter();
@@ -91,8 +92,8 @@ void readMyoSensor(void *pvParameter) {
 }
 
 /**
- * @brief chkHandCollision: Checks if any of the fingers have collided with and
- * object
+ * @brief chkHandCollision: Checks if any of the fingers have collided with
+ *        an object
  *
  * @param pvParameter Void Pointer
  */
