@@ -85,14 +85,14 @@ void readMyoSensor(void *pvParameter) {
     // updates buffer
     myoBuffer.push_back(tempBuffer);
 
-    //  Delays the task for 10 ms (100 Hz)
+    // Delays the task for 10 ms (100 Hz)
     vTaskDelay(10 * portTICK_PERIOD_MS);
   }
 }
 
 /**
  * @brief chkHandCollision: Checks if any of the fingers have collided with and
- * object
+ *        object
  *
  * @param pvParameter Void Pointer
  */
