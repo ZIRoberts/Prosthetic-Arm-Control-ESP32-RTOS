@@ -1,5 +1,5 @@
 /*
- *  Prosthetic Arm Control (P.A.c) ESP32S2 RTOS
+ *  Prosthetic Arm Control (P.A.C) ESP32S2 RTOS
  *
  *  Created on: 24 Nov, 2022
  *      Author: Zachary Roberts
@@ -26,16 +26,12 @@ static PACFSRFeedback fsrFeedback;
 // Creates ADC objects
 static ESP32AnalogRead myoware1;  // Myoware Sensor Inside Fore arm
 static ESP32AnalogRead myoware2;  // Myoware Sensor Outside Fore arm
-uint16_t totalCurrent;
 
-// Buffer definitions
-static std::deque<double>
-    myo1Buffer;  // Buffer for inside forearm Myoware Sensor
-static std::deque<double>
-    myo2Buffer;  // Buffer for outside forearm Myoware Sensor
+// Buffer defintion for EMG Sensor
+static std::deque<buffer> myoBuffer;  // Buffer for both myoware sensors
 
-//
-static bool hysteresis;
+// Hysteresis toggle
+static bool hysteresis = false;
 
 /**
  * @brief Updates the position of the servo motors based on the result of the
@@ -46,12 +42,12 @@ static bool hysteresis;
  */
 void updateServoMotors(void *pvParameter) {
   while (1) {
-    // checks most recent sensor readings to determine the desired
-    // hand position
-    if (myo1Buffer.back() > 1000) {
+
+    // checks most recent sensor readings to determine the desired hand position
+    if (myoBuffer.back().myo1 > 1000) {
       // sets hand to largeDiameter position
       servoController.largeDiameter();
-    } else if (myo2Buffer.back() > 1000) {
+    } else if (myoBuffer.back().myo2 > 1000) {
       // sets hand to indexFingerPointing position
       servoController.indexFingerPointing();
     } else {
@@ -70,21 +66,25 @@ void updateServoMotors(void *pvParameter) {
  * @param pvParameter Void Pointer
  */
 void readMyoSensor(void *pvParameter) {
+  buffer tempBuffer;
   while (1) {
     // Checks if buffers are full and removes oldest data if necessary
-    if (myo1Buffer.size() >= MAX_DUFFER_SIZE) {
-      myo1Buffer.pop_front();
+    if (myoBuffer.size() >= MAX_BUFFER_SIZE) {
+      myoBuffer.pop_front();
     }
 
-    if (myo2Buffer.size() >= MAX_DUFFER_SIZE) {
-      myo2Buffer.pop_front();
-    }
+    // Updates temp buffer value for each EMG sensor
+    tempBuffer.myo1 = myoware1.readMilliVolts();
+    tempBuffer.myo2 = myoware2.readMilliVolts();
 
-    // Updates buffers for each myoelectrographic sensor
-    myo1Buffer.push_back(myoware1.readMilliVolts());
-    myo2Buffer.push_back(myoware2.readMilliVolts());
+    // Print myo input data for debuging purposes
+    Serial.print("Myo1: ");
+    Serial.println(tempBuffer.myo1);
+    Serial.print("Myo2: ");
+    Serial.println(tempBuffer.myo2);
 
-    // Serial.println(myo1Buffer.back());
+    // updates buffer
+    myoBuffer.push_back(tempBuffer);
 
     // Delays the task for 10 ms (100 Hz)
     vTaskDelay(10 * portTICK_PERIOD_MS);
@@ -184,16 +184,16 @@ void setup() {
   xTaskCreatePinnedToCore(     // Use xTaskCreate() in vanilla FreeRTOS
       updateServoMotors,       // Function to be called
       "Update hand position",  // Name of task
-      1024,                    // Stack size (bytes in ESP32, words in FreeRTOS)
+      2048,                    // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,                    // Parameter to pass to function
-      1,                       // Task priority (0 to configMAX_PRIORITIES - 1)
+      3,                       // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,                // Task handle
       0);                      // Run on core 1
 
   xTaskCreatePinnedToCore(     // Use xTaskCreate() in vanilla FreeRTOS
       readMyoSensor,           // Function to be called
       "Read Myoware Sensors",  // Name of task
-      1024,                    // Stack size (bytes in ESP32, words in FreeRTOS)
+      2048,                    // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,                    // Parameter to pass to function
       3,                       // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,                // Task handle
@@ -202,7 +202,7 @@ void setup() {
   xTaskCreatePinnedToCore(    // Use xTaskCreate() in vanilla FreeRTOS
       chkHandCollision,       // Function to be called
       "Check Hand Collsion",  // Name of task
-      1024,                   // Stack size (bytes in ESP32, words in FreeRTOS)
+      2048,                   // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,                   // Parameter to pass to function
       2,                      // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,               // Task handle
@@ -211,7 +211,7 @@ void setup() {
   xTaskCreatePinnedToCore(    // Use xTaskCreate() in vanilla FreeRTOS
       chkMotorCurrent,        // Function to be called
       "Check motor current",  // Name of task
-      1024,                   // Stack size (bytes in ESP32, words in FreeRTOS)
+      2048,                   // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,                   // Parameter to pass to function
       2,                      // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,               // Task handle
