@@ -2,12 +2,12 @@
  *  Prosthetic Arm Control (P.A.C) Motor Driver
  *
  *  Created on: 24 Nov, 2022
- *      Author: Zachary Roberts (zroberts1@ycp.edu)
+ *      Author: Zachary Roberts
  *
  *      This library is used to manage the location, hand postion, and drive
  *      characteristics of the servo motors controlling each finger of the
  *      prosthetic arm created in collaboration with York College of
- * Pennsylvania Capstone Course
+ *      Pennsylvania Capstone Course
  */
 #include "PACServoDriver.h"
 
@@ -56,7 +56,7 @@ void PACServoDriver::openHand() {
 
 /**
  * @brief Hand closes until all fingers are closed or an object is within the
- * hand
+ *        hand
  *
  */
 void PACServoDriver::largeDiameter() {
@@ -149,7 +149,7 @@ uint8_t PACServoDriver::getDriveLimit(uint8_t finger) {
 
 /**
  * @brief Returns if the movement of the specified finger is blocked or
- * unblocked. Returns true (blocked) if the finger is unknown
+ *        unblocked. Returns true (blocked) if the finger is unknown
  *
  * @param finger PWM channel number corresponding to the specified finger
  * @return true Returned when the motion of the finger is blocked by an object
