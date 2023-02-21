@@ -174,8 +174,8 @@ void setup() {
   setCpuFrequencyMhz(80);  // Can be set to 80, 160, or 240 MHZ
 
   // Attach ADC object to GPIO pins
-  myoware1.attach(8);  // Myoware 1 is attached to GPIO 1
-  myoware2.attach(7);  // Myoware 2 is attached to GPIO 2
+  myoware1.attach(5);  // Myoware 1 is attached to GPIO 1
+  myoware2.attach(6);  // Myoware 2 is attached to GPIO 2
 
   // Create RTOS Tasks
   TaskHandle_t xHandle = NULL;
