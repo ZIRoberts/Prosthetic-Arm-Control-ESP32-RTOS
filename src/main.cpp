@@ -9,26 +9,33 @@
  */
 
 #include <../lib/ESP32AnalogRead/ESP32AnalogRead.h>
+#include <../lib/sparthan_myo/myo.h>
 #include <Arduino.h>
 #include <PACCurrentSense/PACCurrentSense.h>  // Current sense library for prosethic arm
 #include <PACFSRFeedback/PACFSRFeedback.h>  // FSR Feedback library for prosethic arm
 #include <PACServoDriver/PACServoDriver.h>  // Motor control libary for prosehtic arm
+#include <freertos/queue.h>
 
 #include <deque>  // C++ libraries are not native to arduino, included within ESPIDF
 
 #include "config.h"
 
-// Creates Servo Driver and Current Sense Object
+// Creates Servo Driver, Current Sense, and Feedback object
 static PACServoDriver servoController;
 static PACCurrentSense currentSense;
 static PACFSRFeedback fsrFeedback;
 
 // Creates ADC objects
-static ESP32AnalogRead myoware1;  // Myoware Sensor Inside Fore arm
-static ESP32AnalogRead myoware2;  // Myoware Sensor Outside Fore arm
+// static ESP32AnalogRead myoware1;  // Myoware Sensor Inside Fore arm
+// static ESP32AnalogRead myoware2;  // Myoware Sensor Outside Fore arm
+
+// Creates Myo Armband object
+static armband myo;
 
 // Buffer defintion for EMG Sensor
-static std::deque<buffer> myoBuffer;  // Buffer for both myoware sensors
+static std::deque<buffer> myoBuffer;  // Buffer for both myoware
+// Queue to pass buffer data between
+QueueHandle_t xQueue;
 
 // Hysteresis toggle
 static bool hysteresis = false;
@@ -42,17 +49,16 @@ static bool hysteresis = false;
  */
 void updateServoMotors(void *pvParameter) {
   while (1) {
-
     // checks most recent sensor readings to determine the desired hand position
-    if (myoBuffer.back().myo1 > 1000) {
-      // sets hand to largeDiameter position
-      servoController.largeDiameter();
-    } else if (myoBuffer.back().myo2 > 1000) {
-      // sets hand to indexFingerPointing position
-      servoController.indexFingerPointing();
-    } else {
-      servoController.openHand();
-    }
+    // if (myoBuffer.back().myo1 > 1000) {
+    //   // sets hand to largeDiameter position
+    //   servoController.largeDiameter();
+    // } else if (myoBuffer.back().myo2 > 1000) {
+    //   // sets hand to indexFingerPointing position
+    //   servoController.indexFingerPointing();
+    // } else {
+    //   servoController.openHand();
+    // }
 
     // Updates servo position every 50 ms (20 Hz)
     vTaskDelay(50 * portTICK_PERIOD_MS);
@@ -66,28 +72,121 @@ void updateServoMotors(void *pvParameter) {
  * @param pvParameter Void Pointer
  */
 void readMyoSensor(void *pvParameter) {
-  buffer tempBuffer;
+  buffer tempBuffer1;
+  buffer tempBuffer2;
   while (1) {
     // Checks if buffers are full and removes oldest data if necessary
-    if (myoBuffer.size() >= MAX_BUFFER_SIZE) {
-      myoBuffer.pop_front();
-    }
+    // if (myoBuffer.size() >= MAX_BUFFER_SIZE) {
+    //   myoBuffer.pop_front();
+    // }
 
-    // Updates temp buffer value for each EMG sensor
-    tempBuffer.myo1 = myoware1.readMilliVolts();
-    tempBuffer.myo2 = myoware2.readMilliVolts();
+    // // Updates temp buffer value for each EMG sensor
+    // tempBuffer.myo1 = myoware1.readMilliVolts();
+    // tempBuffer.myo2 = myoware2.readMilliVolts();
 
-    // Print myo input data for debuging purposes
-    Serial.print("Myo1: ");
-    Serial.println(tempBuffer.myo1);
-    Serial.print("Myo2: ");
-    Serial.println(tempBuffer.myo2);
+    // // Print myo input data for debuging purposes
+    // Serial.print("Myo1: ");
+    // Serial.println(tempBuffer.myo1);
+    // Serial.print("Myo2: ");
+    // Serial.println(tempBuffer.myo2);
 
-    // updates buffer
-    myoBuffer.push_back(tempBuffer);
+    // // updates buffer
+    // myoBuffer.push_back(tempBuffer);
 
     // Delays the task for 10 ms (100 Hz)
-    vTaskDelay(10 * portTICK_PERIOD_MS);
+    xQueueReceive(xQueue, &tempBuffer1, 10);
+    xQueueReceive(xQueue, &tempBuffer2, 10);
+
+    Serial.print(tempBuffer1.myo1);
+    Serial.print(", ");
+    Serial.print(tempBuffer1.myo2);
+    Serial.print(", ");
+    Serial.print(tempBuffer1.myo3);
+    Serial.print(", ");
+    Serial.print(tempBuffer1.myo4);
+    Serial.print(", ");
+    Serial.print(tempBuffer1.myo5);
+    Serial.print(", ");
+    Serial.print(tempBuffer1.myo6);
+    Serial.print(", ");
+    Serial.print(tempBuffer1.myo7);
+    Serial.print(", ");
+    Serial.println(tempBuffer1.myo8);
+
+    Serial.print(tempBuffer2.myo1);
+    Serial.print(", ");
+    Serial.print(tempBuffer2.myo2);
+    Serial.print(", ");
+    Serial.print(tempBuffer2.myo3);
+    Serial.print(", ");
+    Serial.print(tempBuffer2.myo4);
+    Serial.print(", ");
+    Serial.print(tempBuffer2.myo5);
+    Serial.print(", ");
+    Serial.print(tempBuffer2.myo6);
+    Serial.print(", ");
+    Serial.print(tempBuffer2.myo7);
+    Serial.print(", ");
+    Serial.println(tempBuffer2.myo8);
+
+    vTaskDelay(5 * portTICK_PERIOD_MS);
+  }
+}
+
+/**
+ * @brief
+ *
+ * @param pBLERemoteCharacteristic
+ * @param pData
+ * @param length
+ * @param isNotify
+ */
+void emg_callback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
+                  uint8_t *pData, size_t length, bool isNotify) {
+  myohw_emg_data_t *emg_data = (myohw_emg_data_t *)pData;
+  buffer tempBuffer1;
+  buffer tempBuffer2;
+
+  tempBuffer1 = {emg_data->sample1[0], emg_data->sample1[1],
+                 emg_data->sample1[2], emg_data->sample1[3],
+                 emg_data->sample1[4], emg_data->sample1[5],
+                 emg_data->sample1[6], emg_data->sample1[7]};
+
+  tempBuffer2 = {emg_data->sample2[0], emg_data->sample2[1],
+                 emg_data->sample2[2], emg_data->sample2[3],
+                 emg_data->sample2[4], emg_data->sample2[5],
+                 emg_data->sample2[6], emg_data->sample2[7]};
+
+  xQueueSend(xQueue, &tempBuffer1, 10);
+  xQueueSend(xQueue, &tempBuffer2, 10);
+}
+
+/**
+ * @brief
+ *
+ * @param pvParameter
+ */
+void readMyoArmband(void *pvParameter) {
+  while (1) {
+    // Connects to Myo Armband sensor
+    if (!myo.connected) {
+      Serial.println("Connecting...");
+      myo.connect();
+      Serial.println(" - Connected");
+      delay(100);
+
+      // Armband sleep mode
+      // sleep mode 0 = turn off after period of inactivity
+      // sleep mode 1 = remain on until battery is depleated
+      myo.set_sleep_mode(0);
+      myo.set_myo_mode(myohw_emg_mode_send_emg,          // Enables EMG data
+                       myohw_imu_mode_none,              // Disable IMU Data
+                       myohw_classifier_mode_disabled);  // Classifier mode
+
+      myo.emg_notification(TURN_ON)->registerForNotify(emg_callback);
+    }
+
+    delay(10);
   }
 }
 
@@ -173,10 +272,11 @@ void setup() {
 
   // Set CPU clock to 80MHz
   setCpuFrequencyMhz(80);  // Can be set to 80, 160, or 240 MHZ
-
-  // Attach ADC object to GPIO pins
-  myoware1.attach(8);  // Myoware 1 is attached to GPIO 1
-  myoware2.attach(7);  // Myoware 2 is attached to GPIO 2
+  esp_log_level_set("*", ESP_LOG_DEBUG);
+  xQueue = xQueueCreate(10, sizeof(buffer));
+  //   // Attach ADC object to GPIO pins
+  //   myoware1.attach(8);  // Myoware 1 is attached to GPIO 1
+  //   myoware2.attach(7);  // Myoware 2 is attached to GPIO 2
 
   // Create RTOS Tasks
   TaskHandle_t xHandle = NULL;
@@ -184,20 +284,29 @@ void setup() {
   xTaskCreatePinnedToCore(     // Use xTaskCreate() in vanilla FreeRTOS
       updateServoMotors,       // Function to be called
       "Update hand position",  // Name of task
-      2048,                    // Stack size (bytes in ESP32, words in FreeRTOS)
+      2024,                    // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,                    // Parameter to pass to function
-      3,                       // Task priority (0 to configMAX_PRIORITIES - 1)
+      1,                       // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,                // Task handle
-      0);                      // Run on core 1
+      1);                      // Run on core 1
 
-  xTaskCreatePinnedToCore(     // Use xTaskCreate() in vanilla FreeRTOS
-      readMyoSensor,           // Function to be called
-      "Read Myoware Sensors",  // Name of task
-      2048,                    // Stack size (bytes in ESP32, words in FreeRTOS)
-      NULL,                    // Parameter to pass to function
-      3,                       // Task priority (0 to configMAX_PRIORITIES - 1)
-      &xHandle,                // Task handle
-      0);                      // Run on core 1
+  xTaskCreatePinnedToCore(  // Use xTaskCreate() in vanilla FreeRTOS
+      readMyoSensor,        // Function to be called
+      "Read EMG Sensors",   // Name of task
+      2048,                 // Stack size (bytes in ESP32, words in FreeRTOS)
+      NULL,                 // Parameter to pass to function
+      3,                    // Task priority (0 to configMAX_PRIORITIES - 1)
+      &xHandle,             // Task handle
+      1);                   // Run on core 1
+
+  xTaskCreatePinnedToCore(  // Use xTaskCreate() in vanilla FreeRTOS
+      readMyoArmband,       // Function to be called
+      "Read EMG armband",   // Name of task
+      10240,                // Stack size (bytes in ESP32, words in FreeRTOS)
+      NULL,                 // Parameter to pass to function
+      3,                    // Task priority (0 to configMAX_PRIORITIES - 1)
+      &xHandle,             // Task handle
+      0);                   // Run on core 0
 
   xTaskCreatePinnedToCore(    // Use xTaskCreate() in vanilla FreeRTOS
       chkHandCollision,       // Function to be called
@@ -206,7 +315,7 @@ void setup() {
       NULL,                   // Parameter to pass to function
       2,                      // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,               // Task handle
-      0);                     // Run on core 1
+      1);                     // Run on core 1
 
   xTaskCreatePinnedToCore(    // Use xTaskCreate() in vanilla FreeRTOS
       chkMotorCurrent,        // Function to be called
@@ -215,7 +324,7 @@ void setup() {
       NULL,                   // Parameter to pass to function
       2,                      // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,               // Task handle
-      0);                     // Run on core 1
+      1);                     // Run on core 1
 
   // TODO: Create task for data processing
 }

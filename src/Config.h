@@ -24,12 +24,12 @@
 
 // Buffer structure for storing EMG data
 struct buffer {
-  uint16_t myo1;
-  uint16_t myo2;
-  //   uint16_t myo3;
-  //   uint16_t myo4;
-  //   uint16_t myo5;
-  //   uint16_t myo6;
-  //   uint16_t myo7;
-  //   uint16_t myo8;
+  int8_t myo1;
+  int8_t myo2;
+  int8_t myo3;
+  int8_t myo4;
+  int8_t myo5;
+  int8_t myo6;
+  int8_t myo7;
+  int8_t myo8;
 };
