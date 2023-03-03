@@ -14,6 +14,7 @@
 #include <PACCurrentSense/PACCurrentSense.h>  // Current sense library for prosethic arm
 #include <PACFSRFeedback/PACFSRFeedback.h>  // FSR Feedback library for prosethic arm
 #include <PACServoDriver/PACServoDriver.h>  // Motor control libary for prosehtic arm
+#include <SPICurrentSense/SPICurrentSense.h>
 #include <freertos/queue.h>
 
 #include <deque>  // C++ libraries are not native to arduino, included within ESPIDF
@@ -24,7 +25,7 @@
 static PACServoDriver servoController;
 static PACCurrentSense currentSense;
 static PACFSRFeedback fsrFeedback;
-
+static SPICurrentSense spiCurrentSense;
 // Creates ADC objects
 // static ESP32AnalogRead myoware1;  // Myoware Sensor Inside Fore arm
 // static ESP32AnalogRead myoware2;  // Myoware Sensor Outside Fore arm
@@ -72,74 +73,68 @@ void updateServoMotors(void *pvParameter) {
  * @param pvParameter Void Pointer
  */
 void readMyoSensor(void *pvParameter) {
-  buffer tempBuffer1;
-  buffer tempBuffer2;
+  buffer tempBuffer;
   while (1) {
-    // Checks if buffers are full and removes oldest data if necessary
-    // if (myoBuffer.size() >= MAX_BUFFER_SIZE) {
-    //   myoBuffer.pop_front();
-    // }
+    // Checks if buffer is full and removes oldest data if necessary
+    if (myoBuffer.size() >= MAX_BUFFER_SIZE) {
+      myoBuffer.pop_front();
+    }
 
-    // // Updates temp buffer value for each EMG sensor
-    // tempBuffer.myo1 = myoware1.readMilliVolts();
-    // tempBuffer.myo2 = myoware2.readMilliVolts();
+    // Checks if new data is available an updates buffer
+    if (xQueueReceive(xQueue, &tempBuffer, 0) == pdTRUE) {
+      myoBuffer.push_back(tempBuffer);
+      // debuging output
+      Serial.print(tempBuffer.myo1);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo2);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo3);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo4);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo5);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo6);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo7);
+      Serial.print(", ");
+      Serial.println(tempBuffer.myo8);
+    }
 
-    // // Print myo input data for debuging purposes
-    // Serial.print("Myo1: ");
-    // Serial.println(tempBuffer.myo1);
-    // Serial.print("Myo2: ");
-    // Serial.println(tempBuffer.myo2);
+    // Checks if new data is available an updates buffer
+    if (xQueueReceive(xQueue, &tempBuffer, 0) == pdTRUE) {
+      myoBuffer.push_back(tempBuffer);
+      // debuging output
+      Serial.print(tempBuffer.myo1);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo2);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo3);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo4);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo5);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo6);
+      Serial.print(", ");
+      Serial.print(tempBuffer.myo7);
+      Serial.print(", ");
+      Serial.println(tempBuffer.myo8);
+    }
 
-    // // updates buffer
-    // myoBuffer.push_back(tempBuffer);
-
-    // Delays the task for 10 ms (100 Hz)
-    xQueueReceive(xQueue, &tempBuffer1, 10);
-    xQueueReceive(xQueue, &tempBuffer2, 10);
-
-    Serial.print(tempBuffer1.myo1);
-    Serial.print(", ");
-    Serial.print(tempBuffer1.myo2);
-    Serial.print(", ");
-    Serial.print(tempBuffer1.myo3);
-    Serial.print(", ");
-    Serial.print(tempBuffer1.myo4);
-    Serial.print(", ");
-    Serial.print(tempBuffer1.myo5);
-    Serial.print(", ");
-    Serial.print(tempBuffer1.myo6);
-    Serial.print(", ");
-    Serial.print(tempBuffer1.myo7);
-    Serial.print(", ");
-    Serial.println(tempBuffer1.myo8);
-
-    Serial.print(tempBuffer2.myo1);
-    Serial.print(", ");
-    Serial.print(tempBuffer2.myo2);
-    Serial.print(", ");
-    Serial.print(tempBuffer2.myo3);
-    Serial.print(", ");
-    Serial.print(tempBuffer2.myo4);
-    Serial.print(", ");
-    Serial.print(tempBuffer2.myo5);
-    Serial.print(", ");
-    Serial.print(tempBuffer2.myo6);
-    Serial.print(", ");
-    Serial.print(tempBuffer2.myo7);
-    Serial.print(", ");
-    Serial.println(tempBuffer2.myo8);
-
+    // Delays the task for 5 ms (200 Hz)
     vTaskDelay(5 * portTICK_PERIOD_MS);
   }
 }
 
 /**
- * @brief
+ * @brief Runs on CORE 0. Is executed when armband notifies BLE characteristic
+ * of a ready EMG data sample. Passes he EMG sample to CORE 1 for Processing.
  *
- * @param pBLERemoteCharacteristic
- * @param pData
- * @param length
- * @param isNotify
+ * @param pBLERemoteCharacteristic Model of remote BLE characteristic
+ * @param pData Raw EMG data received from myo armband
+ * @param length leng of raw EMG data
+ * @param isNotify Notification status of BLE characteristic
  */
 void emg_callback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
                   uint8_t *pData, size_t length, bool isNotify) {
@@ -164,7 +159,7 @@ void emg_callback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
 /**
  * @brief
  *
- * @param pvParameter
+ * @param pvParameter void pointer
  */
 void readMyoArmband(void *pvParameter) {
   while (1) {
@@ -177,11 +172,13 @@ void readMyoArmband(void *pvParameter) {
 
       // Armband sleep mode
       // sleep mode 0 = turn off after period of inactivity
-      // sleep mode 1 = remain on until battery is depleated
+      // sleep mode 1 = remain on until battery is depleted
       myo.set_sleep_mode(0);
+
+      // Set data tranmission mode
       myo.set_myo_mode(myohw_emg_mode_send_emg,          // Enables EMG data
                        myohw_imu_mode_none,              // Disable IMU Data
-                       myohw_classifier_mode_disabled);  // Classifier mode
+                       myohw_classifier_mode_disabled);  // Disable Classifier
 
       myo.emg_notification(TURN_ON)->registerForNotify(emg_callback);
     }
@@ -249,10 +246,12 @@ void chkHandCollision(void *pvParameter) {
 void chkMotorCurrent(void *pvParameter) {
   while (1) {
     // read current draw from all fingers
-    currentSense.readAllFingerCurrents();
+    // currentSense.readAllFingerCurrents();
+
+    spiCurrentSense.readAllFingerCurrents();
 
     // Compare total current to safety threshold
-    if (currentSense.calculateTotalCurrent() > MAX_SERVO_CURRENT) {
+    if (spiCurrentSense.calculateTotalCurrent() > MAX_SERVO_CURRENT) {
       // Emergency Stop if current draw surpasses safety threshold
       servoController.stopAllMotion();
     }
@@ -263,7 +262,7 @@ void chkMotorCurrent(void *pvParameter) {
 }
 
 /**
- * @brief Sets up configures and initializes all necessary objects and tasks
+ * @brief Sets up, configures, and initializes all necessary objects and tasks
  *
  */
 void setup() {
@@ -295,7 +294,7 @@ void setup() {
       "Read EMG Sensors",   // Name of task
       2048,                 // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,                 // Parameter to pass to function
-      3,                    // Task priority (0 to configMAX_PRIORITIES - 1)
+      0,                    // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,             // Task handle
       1);                   // Run on core 1
 
