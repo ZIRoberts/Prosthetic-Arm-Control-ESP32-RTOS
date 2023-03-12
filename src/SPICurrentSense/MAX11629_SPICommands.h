@@ -35,11 +35,11 @@ Setup Register
 // Sampling Clock Select pin 8 = CVNST
 #define INTERNAL_CVST 0b01000000  // Conversion & acquisition internally clock
 // Conversion internally clock, Acquisition externally clock
-#define INTERNAL_EXTERNAL_CVST 0b010001000
+#define INTERNAL_EXTERNAL_CVST 0b010100000
 
 // Sampling Clock Select pin 8 = AIN7
-#define INTERNAL_CLK 0b01001000  // Conversion & acquisition internally clock
-#define EXTERNAL_CLK 0b01001100  // Conversion & acquisition externally clock
+#define INTERNAL_CLK 0b01100000  // Conversion & acquisition internally clock
+#define EXTERNAL_CLK 0b01110000  // Conversion & acquisition externally clock
 
 // Voltage Reference Select
 #define INTERNAL_WAKEUP 0b01000000  // Internal reference, wake-up delay

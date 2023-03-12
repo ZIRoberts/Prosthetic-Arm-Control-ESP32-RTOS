@@ -75,4 +75,5 @@ class PACServoDriver {
 
   // utility functions
   void setDriveSpeed(uint8_t speed);
+  void calibration();
 };

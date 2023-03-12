@@ -23,12 +23,9 @@
 
 // Creates Servo Driver, Current Sense, and Feedback object
 static PACServoDriver servoController;
-static PACCurrentSense currentSense;
+// static PACCurrentSense currentSense;
 static PACFSRFeedback fsrFeedback;
 static SPICurrentSense spiCurrentSense;
-// Creates ADC objects
-// static ESP32AnalogRead myoware1;  // Myoware Sensor Inside Fore arm
-// static ESP32AnalogRead myoware2;  // Myoware Sensor Outside Fore arm
 
 // Creates Myo Armband object
 static armband myo;
@@ -51,15 +48,15 @@ static bool hysteresis = false;
 void updateServoMotors(void *pvParameter) {
   while (1) {
     // checks most recent sensor readings to determine the desired hand position
-    // if (myoBuffer.back().myo1 > 1000) {
-    //   // sets hand to largeDiameter position
-    //   servoController.largeDiameter();
-    // } else if (myoBuffer.back().myo2 > 1000) {
-    //   // sets hand to indexFingerPointing position
-    //   servoController.indexFingerPointing();
-    // } else {
-    //   servoController.openHand();
-    // }
+    if (myoBuffer.back().myo1 > 1000) {
+      // sets hand to largeDiameter position
+      servoController.largeDiameter();
+    } else if (myoBuffer.back().myo2 > 1000) {
+      // sets hand to indexFingerPointing position
+      servoController.indexFingerPointing();
+    } else {
+      servoController.openHand();
+    }
 
     // Updates servo position every 50 ms (20 Hz)
     vTaskDelay(50 * portTICK_PERIOD_MS);
@@ -256,9 +253,62 @@ void chkMotorCurrent(void *pvParameter) {
       servoController.stopAllMotion();
     }
 
+    Serial.print("Pinky Current: ");
+    Serial.println(spiCurrentSense.pinkyCurrent);
     //  Delays the task for 10 ms (100 Hz)
     vTaskDelay(10 * portTICK_PERIOD_MS);
   }
+}
+
+/**
+ * @brief Runs once when the microcontroller boots up.
+ *        Calibrates each current sense circuit to ensure accuracy
+ *        of each individual current sense circuit.
+ *
+ */
+void calibrateCurrentSense() {
+  // Sets all Servos to calibration state
+  servoController.calibration();
+
+  // Creates temporary variables for calibration calculations
+  uint16_t numCalibrationSamples = 250;
+  uint32_t thumbCalibration = 0;
+  uint32_t indexCalibration = 0;
+  uint32_t middleCalibration = 0;
+  uint32_t ringCalibration = 0;
+  uint32_t pinkyCalibration = 0;
+
+  // Reads in 500 current sense values
+  for (uint16_t i = 0; i < numCalibrationSamples; i++) {
+    spiCurrentSense.readAllFingerCurrents();
+
+    thumbCalibration += spiCurrentSense.thumbCurrent;
+    indexCalibration += spiCurrentSense.indexCurrent;
+    middleCalibration += spiCurrentSense.middleCurrent;
+    ringCalibration += spiCurrentSense.ringCurrent;
+    middleCalibration += spiCurrentSense.middleCurrent;
+    pinkyCalibration += spiCurrentSense.pinkyCurrent;
+
+    // Short delay to ensure current average is taken over time
+    // delay is used instead of vTaskDelay to ensure no tasks that could change
+    // motor states are running
+    delay(1);
+  }
+
+  // Average base currents are calculated
+  thumbCalibration /= numCalibrationSamples;
+  indexCalibration /= numCalibrationSamples;
+  middleCalibration /= numCalibrationSamples;
+  ringCalibration /= numCalibrationSamples;
+  pinkyCalibration /= numCalibrationSamples;
+
+  // Sets calculated offsets to corresponding variables
+  spiCurrentSense.setCalibrationOffsets(thumbCalibration, indexCalibration,
+                                        middleCalibration, ringCalibration,
+                                        pinkyCalibration);
+
+  // Sets hand to default position
+  servoController.openHand();
 }
 
 /**
@@ -273,9 +323,6 @@ void setup() {
   setCpuFrequencyMhz(80);  // Can be set to 80, 160, or 240 MHZ
   esp_log_level_set("*", ESP_LOG_DEBUG);
   xQueue = xQueueCreate(10, sizeof(buffer));
-  //   // Attach ADC object to GPIO pins
-  //   myoware1.attach(8);  // Myoware 1 is attached to GPIO 1
-  //   myoware2.attach(7);  // Myoware 2 is attached to GPIO 2
 
   // Create RTOS Tasks
   TaskHandle_t xHandle = NULL;
@@ -316,6 +363,7 @@ void setup() {
       &xHandle,               // Task handle
       1);                     // Run on core 1
 
+  // TODO: LOWER AFTER TESTING
   xTaskCreatePinnedToCore(    // Use xTaskCreate() in vanilla FreeRTOS
       chkMotorCurrent,        // Function to be called
       "Check motor current",  // Name of task

@@ -27,7 +27,7 @@
 #define EOC 33
 
 // ADC configruation
-#define V_REF 3
+#define V_REF_3V 3000  // 3 V regerence = 3000 mV
 #define RESOLUTION 4096
 
 class SPICurrentSense {
@@ -40,6 +40,13 @@ class SPICurrentSense {
   uint8_t result1;
   uint8_t result2;
   uint16_t rawResult;
+
+  // Current Sense Calibration offset values
+  uint16_t thumbOffset;
+  uint16_t indexOffset;
+  uint16_t middleOffset;
+  uint16_t ringOffset;
+  uint16_t pinkyOffset;
 
  public:
   // Constructor
@@ -57,4 +64,7 @@ class SPICurrentSense {
   uint8_t SPITransmit(byte data);
   void readAllFingerCurrents();
   uint16_t calculateTotalCurrent();
+  void setCalibrationOffsets(uint16_t tmpThumbOffset, uint16_t tmpIndexOffset,
+                             uint16_t tmpMiddleOffset, uint16_t tmpRingOffset,
+                             uint16_t tmpPinkyOffset);
 };

@@ -177,3 +177,14 @@ bool PACServoDriver::chkBlocked(uint8_t finger) {
   // If finger is not know, return true to prevent finger from being driven
   return true;
 }
+
+/**
+ * @brief Sets duty cycle of all servos to 0 for calibration. This causes the
+ *        servos to draw negligible current values
+ *
+ */
+void PACServoDriver::calibration() {
+  for (uint8_t i = 0; i < 4; i++) {
+    setDutyCycle(i, 0);
+  }
+}
