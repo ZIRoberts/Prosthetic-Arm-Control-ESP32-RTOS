@@ -23,7 +23,6 @@
 
 // Creates Servo Driver, Current Sense, and Feedback object
 static PACServoDriver servoController;
-// static PACCurrentSense currentSense;
 static PACFSRFeedback fsrFeedback;
 static SPICurrentSense spiCurrentSense;
 
@@ -31,7 +30,7 @@ static SPICurrentSense spiCurrentSense;
 static armband myo;
 
 // Buffer defintion for EMG Sensor
-static std::deque<buffer> myoBuffer;  // Buffer for both myoware
+static std::deque<buffer> myoBuffer;
 // Queue to pass buffer data between
 QueueHandle_t xQueue;
 
@@ -149,12 +148,23 @@ void emg_callback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
                  emg_data->sample2[4], emg_data->sample2[5],
                  emg_data->sample2[6], emg_data->sample2[7]};
 
-  xQueueSend(xQueue, &tempBuffer1, 10);
-  xQueueSend(xQueue, &tempBuffer2, 10);
+  // Pushes data to inter-core buffer
+  // If Queue is full for longer than 10 ms, clear the buffer and push new data
+  if (xQueueSend(xQueue, &tempBuffer1, 10) == false) {
+    xQueueReset(xQueue);
+    xQueueSend(xQueue, &tempBuffer1, 0);
+  }
+
+  if (xQueueSend(xQueue, &tempBuffer2, 10) == false) {
+    xQueueReset(xQueue);
+    xQueueSend(xQueue, &tempBuffer2, 0);
+  }
 }
 
 /**
- * @brief
+ * @brief Connects to Myo armband via BLE and register for BLE notification
+ *        events for data stream.
+ *        This is the only task that runs on Core 0.
  *
  * @param pvParameter void pointer
  */
@@ -261,7 +271,7 @@ void chkMotorCurrent(void *pvParameter) {
 }
 
 /**
- * @brief Runs once when the microcontroller boots up.
+ * @brief Runs once when the ESP32 microcontroller boots up.
  *        Calibrates each current sense circuit to ensure accuracy
  *        of each individual current sense circuit.
  *
@@ -363,7 +373,6 @@ void setup() {
       &xHandle,               // Task handle
       1);                     // Run on core 1
 
-  // TODO: LOWER AFTER TESTING
   xTaskCreatePinnedToCore(    // Use xTaskCreate() in vanilla FreeRTOS
       chkMotorCurrent,        // Function to be called
       "Check motor current",  // Name of task

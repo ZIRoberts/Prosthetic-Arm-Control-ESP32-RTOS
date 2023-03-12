@@ -39,7 +39,7 @@ class SPICurrentSense {
   // ADC response
   uint8_t result1;
   uint8_t result2;
-  uint16_t rawResult;
+  int rawResult;
 
   // Current Sense Calibration offset values
   uint16_t thumbOffset;

@@ -85,21 +85,42 @@ void SPICurrentSense::readAllFingerCurrents() {
         rawResult = rawResult * 3000 / RESOLUTION;
 
         // Calculates and saves current to corresponding finger
+        // If current is a negative value it is overwritten to be 0
         switch (i) {
           case 0:  // Thumb
-            thumbCurrent = (rawResult / 2.1) - thumbOffset;
+            rawResult = (rawResult / 2.1) - thumbOffset;
+            if (rawResult < 0) {
+              rawResult = 0;
+            }
+            thumbCurrent = rawResult;
             break;
           case 1:  // Index finger
-            indexCurrent = (rawResult / 2.1) - thumbOffset;
+            rawResult = (rawResult / 2.1) - indexOffset;
+            if (rawResult < 0) {
+              rawResult = 0;
+            }
+            indexCurrent = rawResult;
             break;
           case 2:  // Middle finger
-            middleCurrent = (rawResult / 2.1) - thumbOffset;
+            rawResult = (rawResult / 2.1) - middleOffset;
+            if (rawResult < 0) {
+              rawResult = 0;
+            }
+            middleCurrent = rawResult;
             break;
           case 3:  // Ring finger
-            ringCurrent = (rawResult / 2.1) - thumbOffset;
+            rawResult = (rawResult / 2.1) - ringOffset;
+            if (rawResult < 0) {
+              rawResult = 0;
+            }
+            ringCurrent = rawResult;
             break;
           case 4:  // Pinky finger
-            pinkyCurrent = (rawResult / 2.1) - thumbOffset;
+            rawResult = (rawResult / 2.1) - pinkyOffset;
+            if (rawResult < 0) {
+              rawResult = 0;
+            }
+            pinkyCurrent = rawResult;
             break;
         }
       }
@@ -123,13 +144,13 @@ uint16_t SPICurrentSense::calculateTotalCurrent() {
 }
 
 /**
- * @brief
+ * @brief Sets all current sense no load offsets for current calculations.
  *
- * @param tmpThumbOffset
- * @param tmpIndexOffset
- * @param tmpMiddleOffset
- * @param tmpRingOffset
- * @param tmpPinkyOffset
+ * @param tmpThumbOffset Thumb offset for current calculations
+ * @param tmpIndexOffset Index offset for current calculations
+ * @param tmpMiddleOffset Middle offset for current calculations
+ * @param tmpRingOffset Ring offset for current calculations
+ * @param tmpPinkyOffset Pinky offset for current calculations
  */
 void SPICurrentSense::setCalibrationOffsets(uint16_t tmpThumbOffset,
                                             uint16_t tmpIndexOffset,
