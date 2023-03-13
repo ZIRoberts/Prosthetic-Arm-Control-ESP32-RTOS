@@ -150,12 +150,12 @@ void emg_callback(BLERemoteCharacteristic *pBLERemoteCharacteristic,
 
   // Pushes data to inter-core buffer
   // If Queue is full for longer than 10 ms, clear the buffer and push new data
-  if (xQueueSend(xQueue, &tempBuffer1, 10) == false) {
+  if (xQueueSend(xQueue, &tempBuffer1, 10) == errQUEUE_FULL) {
     xQueueReset(xQueue);
     xQueueSend(xQueue, &tempBuffer1, 0);
   }
 
-  if (xQueueSend(xQueue, &tempBuffer2, 10) == false) {
+  if (xQueueSend(xQueue, &tempBuffer2, 10) == errQUEUE_FULL) {
     xQueueReset(xQueue);
     xQueueSend(xQueue, &tempBuffer2, 0);
   }
