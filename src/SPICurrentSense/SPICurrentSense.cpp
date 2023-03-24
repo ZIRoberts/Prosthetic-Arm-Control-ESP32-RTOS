@@ -18,6 +18,9 @@
  *
  */
 SPICurrentSense::SPICurrentSense() {
+  // Initialize variables
+  calibrated = false;
+
   // Initializes instance of SPIClass attached to VSPI
   delay(1);  // 1 ms second delay for ADC to boot
   vspi = new SPIClass(VSPI);
@@ -88,37 +91,47 @@ void SPICurrentSense::readAllFingerCurrents() {
         // If current is a negative value it is overwritten to be 0
         switch (i) {
           case 0:  // Thumb
-            rawResult = (rawResult / 2.1) - thumbOffset;
-            if (rawResult < 0) {
-              rawResult = 0;
+            if (calibrated) {
+              rawResult = (rawResult - thumbOffset) / 2.1;
+              if (rawResult < 0) {
+                rawResult = 0;
+              }
             }
             thumbCurrent = rawResult;
             break;
           case 1:  // Index finger
-            rawResult = (rawResult / 2.1) - indexOffset;
-            if (rawResult < 0) {
-              rawResult = 0;
+            if (calibrated) {
+              rawResult = (rawResult - indexOffset) / 2.1;
+              if (rawResult < 0) {
+                rawResult = 0;
+              }
             }
             indexCurrent = rawResult;
             break;
           case 2:  // Middle finger
-            rawResult = (rawResult / 2.1) - middleOffset;
-            if (rawResult < 0) {
-              rawResult = 0;
+            if (calibrated) {
+              rawResult = (rawResult - middleOffset) / 2.1;
+              if (rawResult < 0) {
+                rawResult = 0;
+              }
             }
             middleCurrent = rawResult;
             break;
           case 3:  // Ring finger
-            rawResult = (rawResult / 2.1) - ringOffset;
-            if (rawResult < 0) {
-              rawResult = 0;
+            if (calibrated) {
+              rawResult = (rawResult - ringOffset) / 2.1;
+              if (rawResult < 0) {
+                rawResult = 0;
+              }
             }
             ringCurrent = rawResult;
             break;
           case 4:  // Pinky finger
-            rawResult = (rawResult / 2.1) - pinkyOffset;
-            if (rawResult < 0) {
-              rawResult = 0;
+            if (calibrated) {
+              rawResult = (rawResult - pinkyOffset) / 2.1;
+              if (rawResult < 0) {
+                rawResult = 0;
+              }
             }
             pinkyCurrent = rawResult;
             break;

@@ -8,18 +8,17 @@
  *      collaboration with York College of Pennsylvania Capstone course.
  */
 
-#include <../lib/ESP32AnalogRead/ESP32AnalogRead.h>
 #include <../lib/sparthan_myo/myo.h>
 #include <Arduino.h>
-#include <PACCurrentSense/PACCurrentSense.h>  // Current sense library for prosethic arm
 #include <PACFSRFeedback/PACFSRFeedback.h>  // FSR Feedback library for prosethic arm
 #include <PACServoDriver/PACServoDriver.h>  // Motor control libary for prosehtic arm
 #include <SPICurrentSense/SPICurrentSense.h>
 #include <freertos/queue.h>
 
+#include <cstdlib>
 #include <deque>  // C++ libraries are not native to arduino, included within ESPIDF
 
-#include "config.h"
+#include "config.h"  // config file with common definitions
 
 // Creates Servo Driver, Current Sense, and Feedback object
 static PACServoDriver servoController;
@@ -34,6 +33,9 @@ static std::deque<buffer> myoBuffer;
 // Queue to pass buffer data between
 QueueHandle_t xQueue;
 
+// Used to pass hand position from signal processing task to update servos task
+uint8_t handPosition = 0;
+
 // Hysteresis toggle
 static bool hysteresis = false;
 
@@ -46,17 +48,17 @@ static bool hysteresis = false;
  */
 void updateServoMotors(void *pvParameter) {
   while (1) {
-    // checks most recent sensor readings to determine the desired hand position
-    if (myoBuffer.back().myo1 > 1000) {
-      // sets hand to largeDiameter position
-      servoController.largeDiameter();
-    } else if (myoBuffer.back().myo2 > 1000) {
-      // sets hand to indexFingerPointing position
-      servoController.indexFingerPointing();
-    } else {
-      servoController.openHand();
+    switch (handPosition) {
+      case 0:
+        servoController.openHand();
+        break;
+      case 1:
+        servoController.largeDiameter();
+        break;
+      case 2:
+        servoController.indexFingerPointing();
+        break;
     }
-
     // Updates servo position every 50 ms (20 Hz)
     vTaskDelay(50 * portTICK_PERIOD_MS);
   }
@@ -68,7 +70,8 @@ void updateServoMotors(void *pvParameter) {
  *
  * @param pvParameter Void Pointer
  */
-void readMyoSensor(void *pvParameter) {
+void transferMyoData(void *pvParameter) {
+  Serial.println("transferMyoData: ");
   buffer tempBuffer;
   while (1) {
     // Checks if buffer is full and removes oldest data if necessary
@@ -79,43 +82,11 @@ void readMyoSensor(void *pvParameter) {
     // Checks if new data is available an updates buffer
     if (xQueueReceive(xQueue, &tempBuffer, 0) == pdTRUE) {
       myoBuffer.push_back(tempBuffer);
-      // debuging output
-      Serial.print(tempBuffer.myo1);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo2);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo3);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo4);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo5);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo6);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo7);
-      Serial.print(", ");
-      Serial.println(tempBuffer.myo8);
     }
 
     // Checks if new data is available an updates buffer
     if (xQueueReceive(xQueue, &tempBuffer, 0) == pdTRUE) {
       myoBuffer.push_back(tempBuffer);
-      // debuging output
-      Serial.print(tempBuffer.myo1);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo2);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo3);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo4);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo5);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo6);
-      Serial.print(", ");
-      Serial.print(tempBuffer.myo7);
-      Serial.print(", ");
-      Serial.println(tempBuffer.myo8);
     }
 
     // Delays the task for 5 ms (200 Hz)
@@ -263,10 +234,53 @@ void chkMotorCurrent(void *pvParameter) {
       servoController.stopAllMotion();
     }
 
-    Serial.print("Pinky Current: ");
-    Serial.println(spiCurrentSense.pinkyCurrent);
     //  Delays the task for 10 ms (100 Hz)
     vTaskDelay(10 * portTICK_PERIOD_MS);
+  }
+}
+
+/**
+ * @brief Processes the signals received from the myo armband and determines the
+ *        corresponding hand position. Currently implemented using mean absolute
+ *        value with a set hysteresis threshold. Will be changed in future
+ *        versions to utilized Linear Discriminant Analysis
+ *
+ * @param pvParameter
+ */
+void signalProcessor(void *pvParameter) {
+  while (1) {
+    // Processes signal into mean absolute value for EMG channels 3 and 7
+    uint32_t chnl_3_MAV = 0;
+    uint32_t chnl_7_MAV = 0;
+    uint8_t chnl_3_threshold = 50;
+    uint8_t chnl_7_threshold = 25;
+
+    // Sums the absolute values of the channels and stores in respective
+    // temporary buffer integers
+    for (uint8_t sampleNUM = 0; sampleNUM < 50; sampleNUM++) {
+      chnl_3_MAV += abs(myoBuffer[200 + sampleNUM].myo3);
+      chnl_7_MAV += abs(myoBuffer[200 + sampleNUM].myo7);
+    }
+
+    // Averages the samples for 250 ms windows
+    chnl_3_MAV /= 45;
+    chnl_7_MAV /= 25;
+
+    Serial.println("Hand Position: ");
+    if (chnl_3_MAV >= chnl_3_threshold) {
+      // set large diameter flag
+      handPosition = 1;
+    } else if (chnl_7_MAV >= chnl_7_threshold) {
+      // set index finger pointing threshold
+      handPosition = 2;
+    } else {
+      // set platform push threshold
+      handPosition = 0;
+    }
+    Serial.println(handPosition);
+
+    //  Delays the task for 200 ms (5 Hz)
+    vTaskDelay(200 * portTICK_PERIOD_MS);
   }
 }
 
@@ -316,6 +330,7 @@ void calibrateCurrentSense() {
   spiCurrentSense.setCalibrationOffsets(thumbCalibration, indexCalibration,
                                         middleCalibration, ringCalibration,
                                         pinkyCalibration);
+  spiCurrentSense.calibrated = true;
 
   // Sets hand to default position
   servoController.openHand();
@@ -332,6 +347,9 @@ void setup() {
   // Set CPU clock to 80MHz
   setCpuFrequencyMhz(80);  // Can be set to 80, 160, or 240 MHZ
   esp_log_level_set("*", ESP_LOG_DEBUG);
+
+  calibrateCurrentSense();
+
   xQueue = xQueueCreate(10, sizeof(buffer));
 
   // Create RTOS Tasks
@@ -347,11 +365,11 @@ void setup() {
       1);                      // Run on core 1
 
   xTaskCreatePinnedToCore(  // Use xTaskCreate() in vanilla FreeRTOS
-      readMyoSensor,        // Function to be called
-      "Read EMG Sensors",   // Name of task
+      transferMyoData,      // Function to be called
+      "Transfer EMG Data",  // Name of task
       2048,                 // Stack size (bytes in ESP32, words in FreeRTOS)
       NULL,                 // Parameter to pass to function
-      0,                    // Task priority (0 to configMAX_PRIORITIES - 1)
+      2,                    // Task priority (0 to configMAX_PRIORITIES - 1)
       &xHandle,             // Task handle
       1);                   // Run on core 1
 
@@ -382,7 +400,14 @@ void setup() {
       &xHandle,               // Task handle
       1);                     // Run on core 1
 
-  // TODO: Create task for data processing
+  xTaskCreatePinnedToCore(  // Use xTaskCreate() in vanilla FreeRTOS
+      signalProcessor,      // Function to be called
+      "Transfer EMG Data",  // Name of task
+      2048,                 // Stack size (bytes in ESP32, words in FreeRTOS)
+      NULL,                 // Parameter to pass to function
+      3,                    // Task priority (0 to configMAX_PRIORITIES - 1)
+      &xHandle,             // Task handle
+      1);                   // Run on core 1
 }
 
 void loop() {}

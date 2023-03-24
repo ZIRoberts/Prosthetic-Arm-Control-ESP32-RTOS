@@ -42,7 +42,7 @@ class SPICurrentSense {
   int rawResult;
 
   // Current Sense Calibration offset values
-  uint16_t thumbOffset;
+
   uint16_t indexOffset;
   uint16_t middleOffset;
   uint16_t ringOffset;
@@ -51,7 +51,7 @@ class SPICurrentSense {
  public:
   // Constructor
   SPICurrentSense();
-
+  uint16_t thumbOffset;
   // stores ADC reading current sensor
   uint16_t thumbCurrent;
   uint16_t indexCurrent;
@@ -59,6 +59,9 @@ class SPICurrentSense {
   uint16_t ringCurrent;
   uint16_t pinkyCurrent;
   uint16_t totalCurrent;
+
+  // Calibration toggle
+  bool calibrated;
 
   // function definitions
   uint8_t SPITransmit(byte data);
