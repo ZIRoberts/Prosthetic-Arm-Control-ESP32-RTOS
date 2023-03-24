@@ -2,12 +2,12 @@
  *  Prosthetic Arm Control (P.A.C) Current Sense
  *
  *  Created on: 06 Dec, 2022
- *      Author: Zachary Roberts (zroberts1@ycp.edu)
+ *      Author: Zachary Roberts
  *
  *      This library is used to manage the ADC readings, conversions, and
  *      calculations with the data from the Low End Current sense circuit for
- * each respective finger on the prosthetic arm created in collaboration with
- *      York College of Pennsylvania Capstone Course
+ *      each respective finger on the prosthetic arm created in collaboration
+ *      with York College of Pennsylvania Capstone Course
  */
 
 #include "PACCurrentSense.h"
@@ -19,11 +19,11 @@
  */
 PACCurrentSense::PACCurrentSense() {
   // Initializes the ADC pins to their respective fingers
-  senseThumbCurrent.attach(10);
-  senseIndexCurrent.attach(9);
-  senseMiddleCurrent.attach(7);
-  senseRingCurrent.attach(4);
-  sensePinkyCurrent.attach(2);
+  senseThumbCurrent.attach(12);
+  senseIndexCurrent.attach(11);
+  senseMiddleCurrent.attach(9);
+  senseRingCurrent.attach(6);
+  sensePinkyCurrent.attach(4);
 
   // initializes current readings to 0
   thumbCurrent = 0;

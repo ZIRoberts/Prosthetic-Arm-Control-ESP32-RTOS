@@ -2,13 +2,10 @@
  *  Prosthetic Arm Control (P.A.C) Current Sense
  *
  *  Created on: 02 Feb, 2023
- *      Author: Zachary Roberts (zroberts1@ycp.edu)
+ *      Author: Zachary Roberts
  *
  *      This library is used to manage the ADC readings, conversions, and
- *      calculations with the data from the Force Sensetive Resistor (FSR) h
- *      feedback circuit for each respective fingers on the prosthetic arm
- *      created in collaboration with York College of Pennsylvania Capstone
- * Course
+ *      calculations with the data
  */
 
 #include "PACFSRFeedback.h"
@@ -20,10 +17,10 @@
  */
 PACFSRFeedback::PACFSRFeedback() {
   // Attach Feedback sensors to GPIO pins
-  thumbFeedback.attach(12);
-  indexFeedback.attach(11);
+  thumbFeedback.attach(17);
+  indexFeedback.attach(16);
   middleFeedback.attach(8);
-  ringFeedback.attach(3);
+  ringFeedback.attach(2);
   pinkyFeedback.attach(1);
 
   // initializes feedback readings to 0
@@ -75,13 +72,13 @@ void PACFSRFeedback::readAllFingerFeedback() {
 uint16_t PACFSRFeedback::senseFeedback(uint8_t finger) {
   switch (finger) {
     case 0:  // Thumb
-      return thumbFeedback.readMilliVolts();
-      break;
-    case 1:  // Index finger
       return indexFeedback.readMilliVolts();
       break;
-    case 2:  // Middle finger
+    case 1:  // Index finger
       return middleFeedback.readMilliVolts();
+      break;
+    case 2:  // Middle finger
+      return thumbFeedback.readMilliVolts();
       break;
     case 3:  // Ring finger
       return ringFeedback.readMilliVolts();
