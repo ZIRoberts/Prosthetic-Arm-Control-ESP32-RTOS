@@ -35,7 +35,12 @@ SPICurrentSense::SPICurrentSense() {
   SPITransmit(RESET_REG);  // Clears all ADC registers
   // Use internal clock and external reference for conversions
   SPITransmit(INTERNAL_CLK | EXTERNAL_VREF);
-  SPITransmit(AVG_DISABLE);  // Disable averaging, single conversion mode
+  SPITransmit(AVG_DISABLE);  // Disable averaging, single conversion mode.
+
+  // Initialize timer 0
+  // Timer Divider = 80 (80MHz / 80 = 1000000 ticker per second)
+  // Timer Counts up (true)
+  timer = timerBegin(0, 80, true);
 }
 
 /**
@@ -70,6 +75,8 @@ void SPICurrentSense::readAllFingerCurrents() {
   // Requests signal data from all current sensors
   SPITransmit(AIN4 | SCAN_0N);  // Scans channels 0 through 4
 
+  // Sets time back to 0 to being waiting for response
+  timerWrite(timer, 0);
   // Wait for all readings to be returned
   while (1) {
     // Checks for conversions to be finished
@@ -138,6 +145,12 @@ void SPICurrentSense::readAllFingerCurrents() {
         }
       }
       // Breaks out of loop when ADC response is received
+      break;
+    }
+
+    // If timer reaches greater than 200 ticks (200 us), break out of loop
+    // ADC conversions only take 6 us each, 36 us total
+    if (timerRead(timer) > 200) {
       break;
     }
   }

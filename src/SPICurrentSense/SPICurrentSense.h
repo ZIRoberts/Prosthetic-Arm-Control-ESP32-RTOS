@@ -42,11 +42,13 @@ class SPICurrentSense {
   int rawResult;
 
   // Current Sense Calibration offset values
-
   uint16_t indexOffset;
   uint16_t middleOffset;
   uint16_t ringOffset;
   uint16_t pinkyOffset;
+
+  // Timer to break out if SPI wait loop
+  hw_timer_t* timer = NULL;
 
  public:
   // Constructor

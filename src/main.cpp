@@ -228,6 +228,9 @@ void chkMotorCurrent(void *pvParameter) {
 
     spiCurrentSense.readAllFingerCurrents();
 
+    Serial.print("Thumb Current: ");
+    Serial.println(spiCurrentSense.thumbCurrent);
+
     // Compare total current to safety threshold
     if (spiCurrentSense.calculateTotalCurrent() > MAX_SERVO_CURRENT) {
       // Emergency Stop if current draw surpasses safety threshold
@@ -249,35 +252,37 @@ void chkMotorCurrent(void *pvParameter) {
  */
 void signalProcessor(void *pvParameter) {
   while (1) {
-    // Processes signal into mean absolute value for EMG channels 3 and 7
-    uint32_t chnl_3_MAV = 0;
-    uint32_t chnl_7_MAV = 0;
-    uint8_t chnl_3_threshold = 50;
-    uint8_t chnl_7_threshold = 25;
+    if (myoBuffer.size() == MAX_BUFFER_SIZE) {
+      // Processes signal into mean absolute value for EMG channels 3 and 7
+      uint32_t chnl_3_MAV = 0;
+      uint32_t chnl_7_MAV = 0;
+      uint8_t chnl_3_threshold = 50;
+      uint8_t chnl_7_threshold = 25;
 
-    // Sums the absolute values of the channels and stores in respective
-    // temporary buffer integers
-    for (uint8_t sampleNUM = 0; sampleNUM < 50; sampleNUM++) {
-      chnl_3_MAV += abs(myoBuffer[200 + sampleNUM].myo3);
-      chnl_7_MAV += abs(myoBuffer[200 + sampleNUM].myo7);
+      // Sums the absolute values of the channels and stores in respective
+      // temporary buffer integers
+      for (uint8_t sampleNUM = 0; sampleNUM < 50; sampleNUM++) {
+        chnl_3_MAV += abs(myoBuffer[200 + sampleNUM].myo3);
+        chnl_7_MAV += abs(myoBuffer[200 + sampleNUM].myo7);
+      }
+
+      // Averages the samples for 250 ms windows
+      chnl_3_MAV /= 45;
+      chnl_7_MAV /= 25;
+
+      Serial.println("Hand Position: ");
+      if (chnl_3_MAV >= chnl_3_threshold) {
+        // set large diameter flag
+        handPosition = 1;
+      } else if (chnl_7_MAV >= chnl_7_threshold) {
+        // set index finger pointing threshold
+        handPosition = 2;
+      } else {
+        // set platform push threshold
+        handPosition = 0;
+      }
+      Serial.println(handPosition);
     }
-
-    // Averages the samples for 250 ms windows
-    chnl_3_MAV /= 45;
-    chnl_7_MAV /= 25;
-
-    Serial.println("Hand Position: ");
-    if (chnl_3_MAV >= chnl_3_threshold) {
-      // set large diameter flag
-      handPosition = 1;
-    } else if (chnl_7_MAV >= chnl_7_threshold) {
-      // set index finger pointing threshold
-      handPosition = 2;
-    } else {
-      // set platform push threshold
-      handPosition = 0;
-    }
-    Serial.println(handPosition);
 
     //  Delays the task for 200 ms (5 Hz)
     vTaskDelay(200 * portTICK_PERIOD_MS);
