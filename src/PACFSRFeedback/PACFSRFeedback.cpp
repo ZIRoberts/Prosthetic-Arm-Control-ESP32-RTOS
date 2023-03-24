@@ -5,10 +5,7 @@
  *      Author: Zachary Roberts
  *
  *      This library is used to manage the ADC readings, conversions, and
- *      calculations with the data from the Force Sensetive Resistor (FSR)
- *      feedback circuit for each respective fingers on the prosthetic arm
- *      created in collaboration with York College of Pennsylvania Capstone
- *      Course
+ *      calculations with the data
  */
 
 #include "PACFSRFeedback.h"
@@ -20,11 +17,11 @@
  */
 PACFSRFeedback::PACFSRFeedback() {
   // Attach Feedback sensors to GPIO pins
-  thumbFeedback.attach(14);
-  indexFeedback.attach(13);
-  middleFeedback.attach(10);
-  ringFeedback.attach(5);
-  pinkyFeedback.attach(3);
+  thumbFeedback.attach(17);
+  indexFeedback.attach(16);
+  middleFeedback.attach(8);
+  ringFeedback.attach(2);
+  pinkyFeedback.attach(1);
 
   // initializes feedback readings to 0
   thumbFeedbackGrams = 0;
