@@ -21,9 +21,9 @@
 #define FINGER_PINKY_CHANNEL 4
 
 // Defines Drive limits for servos
-#define SERVO_HOME 50  // 20% duty cycle @8 bit resolution
-#define SERVO_Max 205  // 80% duty cycle @8 bit resolution
-#define SERVO_STOP 0   // Servos Stop moving and freeze in place
+#define SERVO_HOME 100  // 20% duty cycle @8 bit resolution
+#define SERVO_Max 205   // 80% duty cycle @8 bit resolution
+#define SERVO_STOP 0    // Servos Stop moving and freeze in place
 
 // Max Distance Drivable
 // This limits the distance each finger can drive as each finger in unique
@@ -75,4 +75,5 @@ class PACServoDriver {
 
   // utility functions
   void setDriveSpeed(uint8_t speed);
+  void calibration();
 };
