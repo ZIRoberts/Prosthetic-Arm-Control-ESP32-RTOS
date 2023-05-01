@@ -4,11 +4,11 @@
 #include <Arduino.h>
 // Defines Constant for PWM Channels
 // Used to identify which finger an object is to operate on
-#define FINGER_THUMB_CHANNEL 0
-#define FINGER_INDEX_CHANNEL 1
+#define FINGER_THUMB_CHANNEL 4
+#define FINGER_INDEX_CHANNEL 3
 #define FINGER_MIDDLE_CHANNEL 2
-#define FINGER_RING_CHANNEL 3
-#define FINGER_PINKY_CHANNEL 4
+#define FINGER_RING_CHANNEL 1
+#define FINGER_PINKY_CHANNEL 0
 
 class PACCurrentSense {
  private:

@@ -151,7 +151,7 @@ void readMyoArmband(void *pvParameter) {
       // Armband sleep mode
       // sleep mode 0 = turn off after period of inactivity
       // sleep mode 1 = remain on until battery is depleted
-      myo.set_sleep_mode(0);
+      myo.set_sleep_mode(1);
 
       // Set data tranmission mode
       myo.set_myo_mode(myohw_emg_mode_send_emg,          // Enables EMG data
@@ -228,8 +228,8 @@ void chkMotorCurrent(void *pvParameter) {
 
     spiCurrentSense.readAllFingerCurrents();
 
-    Serial.print("Thumb Current: ");
-    Serial.println(spiCurrentSense.thumbCurrent);
+    // Serial.print("Thumb Current: ");
+    // Serial.println(spiCurrentSense.thumbCurrent);
 
     // Compare total current to safety threshold
     if (spiCurrentSense.calculateTotalCurrent() > MAX_SERVO_CURRENT) {
@@ -256,7 +256,8 @@ void signalProcessor(void *pvParameter) {
       // Processes signal into mean absolute value for EMG channels 3 and 7
       uint32_t chnl_3_MAV = 0;
       uint32_t chnl_7_MAV = 0;
-      uint8_t chnl_3_threshold = 50;
+      uint8_t chnl_3_threshold = 40;
+      // uint8_t chnl_7_threshold = 25;
       uint8_t chnl_7_threshold = 25;
 
       // Sums the absolute values of the channels and stores in respective
@@ -267,7 +268,9 @@ void signalProcessor(void *pvParameter) {
       }
 
       // Averages the samples for 250 ms windows
-      chnl_3_MAV /= 45;
+      // chnl_3_MAV /= 45;
+      // chnl_7_MAV /= 25;
+      chnl_3_MAV /= 25;
       chnl_7_MAV /= 25;
 
       Serial.println("Hand Position: ");
@@ -285,7 +288,7 @@ void signalProcessor(void *pvParameter) {
     }
 
     //  Delays the task for 200 ms (5 Hz)
-    vTaskDelay(200 * portTICK_PERIOD_MS);
+    vTaskDelay(20 * portTICK_PERIOD_MS);
   }
 }
 
