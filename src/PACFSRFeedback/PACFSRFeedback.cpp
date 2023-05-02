@@ -20,11 +20,12 @@
  */
 PACFSRFeedback::PACFSRFeedback() {
   // Attach Feedback sensors to GPIO pins
-  thumbFeedback.attach(14);
-  indexFeedback.attach(13);
-  middleFeedback.attach(10);
-  ringFeedback.attach(5);
-  pinkyFeedback.attach(3);
+  thumbFeedback.attach(8);
+  indexFeedback.attach(17);
+  middleFeedback.attach(16);
+  ringFeedback.attach(2);
+  pinkyFeedback.attach(1);
+  palmFeedback.attach(9);
 
   // initializes feedback readings to 0
   thumbFeedbackGrams = 0;
@@ -32,6 +33,7 @@ PACFSRFeedback::PACFSRFeedback() {
   middleFeedbackGrams = 0;
   ringFeedbackGrams = 0;
   pinkyFeedbackGrams = 0;
+  palmFeedbackGrams = 0;
 }
 
 /**
@@ -42,16 +44,18 @@ void PACFSRFeedback::calculateFeedbackGrams() {
   // Voltage can be converted to force in grams using the fallowing equation
   // grams = pow((271/(47000*((3.3/(miliVolts/1000)) -1 ))),(1/0.69))
 
-  thumbFeedbackGrams = pow(
-      (271 / (47000 * ((3.3 / (thumbFeedbackRaw / 1000)) - 1))), (1 / 0.69));
-  indexFeedbackGrams = pow(
-      (271 / (47000 * ((3.3 / (indexFeedbackRaw / 1000)) - 1))), (1 / 0.69));
-  middleFeedbackGrams = pow(
-      (271 / (47000 * ((3.3 / (middleFeedbackRaw / 1000)) - 1))), (1 / 0.69));
+  thumbFeedbackGrams =
+      pow((271 / (47 * ((3.3 / (thumbFeedbackRaw / 1000)) - 1))), (1 / 0.69));
+  indexFeedbackGrams =
+      pow((271 / (47 * ((3.3 / (indexFeedbackRaw / 1000)) - 1))), (1 / 0.69));
+  middleFeedbackGrams =
+      pow((271 / (47 * ((3.3 / (middleFeedbackRaw / 1000)) - 1))), (1 / 0.69));
   ringFeedbackGrams =
-      pow((271 / (47000 * ((3.3 / (ringFeedbackRaw / 1000)) - 1))), (1 / 0.69));
-  pinkyFeedbackGrams = pow(
-      (271 / (47000 * ((3.3 / (pinkyFeedbackRaw / 1000)) - 1))), (1 / 0.69));
+      pow((271 / (47 * ((3.3 / (ringFeedbackRaw / 1000)) - 1))), (1 / 0.69));
+  pinkyFeedbackGrams =
+      pow((271 / (47 * ((3.3 / (pinkyFeedbackRaw / 1000)) - 1))), (1 / 0.69));
+  palmFeedbackGrams =
+      pow((271 / (47 * ((3.3 / (palmFeedbackRaw / 1000)) - 1))), (1 / 0.69));
 }
 
 /**
@@ -64,6 +68,7 @@ void PACFSRFeedback::readAllFingerFeedback() {
   middleFeedbackRaw = senseFeedback(FINGER_MIDDLE_CHANNEL);
   ringFeedbackRaw = senseFeedback(FINGER_RING_CHANNEL);
   pinkyFeedbackRaw = senseFeedback(FINGER_PINKY_CHANNEL);
+  palmFeedbackRaw = senseFeedback(PALM_CHANNEL);
 }
 
 /**
@@ -88,6 +93,9 @@ uint16_t PACFSRFeedback::senseFeedback(uint8_t finger) {
       break;
     case 4:  // Pinky finger
       return pinkyFeedback.readMilliVolts();
+      break;
+    case 5:  // Palm
+      return palmFeedback.readMilliVolts();
       break;
   }
 

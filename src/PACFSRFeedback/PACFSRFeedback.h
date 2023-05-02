@@ -10,6 +10,7 @@
 #define FINGER_MIDDLE_CHANNEL 2
 #define FINGER_RING_CHANNEL 3
 #define FINGER_PINKY_CHANNEL 4
+#define PALM_CHANNEL 5
 
 class PACFSRFeedback {
  private:
@@ -19,24 +20,34 @@ class PACFSRFeedback {
   ESP32AnalogRead thumbFeedback;
   ESP32AnalogRead ringFeedback;
   ESP32AnalogRead pinkyFeedback;
+  ESP32AnalogRead palmFeedback;
 
   // FSR Input in Ohms
-  uint16_t thumbFeedbackRaw;
-  uint16_t indexFeedbackRaw;
-  uint16_t middleFeedbackRaw;
-  uint16_t ringFeedbackRaw;
-  uint16_t pinkyFeedbackRaw;
+  // double thumbFeedbackRaw;
+  // double indexFeedbackRaw;
+  // double middleFeedbackRaw;
+  // double ringFeedbackRaw;
+  // double pinkyFeedbackRaw;
+  // double palmFeedbackRaw;
 
  public:
   // Constructor
   PACFSRFeedback();
 
   // FSR Input converted from Ohms to Grams
-  uint16_t thumbFeedbackGrams;
-  uint16_t indexFeedbackGrams;
-  uint16_t middleFeedbackGrams;
-  uint16_t ringFeedbackGrams;
-  uint16_t pinkyFeedbackGrams;
+  double thumbFeedbackGrams;
+  double indexFeedbackGrams;
+  double middleFeedbackGrams;
+  double ringFeedbackGrams;
+  double pinkyFeedbackGrams;
+  double palmFeedbackGrams;
+
+  double thumbFeedbackRaw;
+  double indexFeedbackRaw;
+  double middleFeedbackRaw;
+  double ringFeedbackRaw;
+  double pinkyFeedbackRaw;
+  double palmFeedbackRaw;
 
   void readAllFingerFeedback();
   void calculateFeedbackGrams();

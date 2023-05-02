@@ -181,6 +181,31 @@ void chkHandCollision(void *pvParameter) {
     uint16_t margin = 50;
     uint16_t threshold = 200;
 
+    Serial.print("Index FSR: ");
+    Serial.println(fsrFeedback.indexFeedbackRaw);
+    Serial.println(" ");
+
+    Serial.print("Middle FSR: ");
+    Serial.println(fsrFeedback.middleFeedbackRaw);
+    Serial.println(" ");
+
+    Serial.print("Ring FSR: ");
+    Serial.println(fsrFeedback.ringFeedbackRaw);
+    Serial.println(" ");
+
+    Serial.print("Pinky FSR: ");
+    Serial.println(fsrFeedback.pinkyFeedbackRaw);
+    Serial.println(" ");
+
+    Serial.print("Thumb FSR: ");
+    Serial.println(fsrFeedback.thumbFeedbackRaw);
+    Serial.println(" ");
+
+    Serial.print("Palm FSR: ");
+    Serial.println(fsrFeedback.palmFeedbackRaw);
+    Serial.println(" ");
+    delay(250);
+
     // Hysteresis for read in FSR values
     if (hysteresis) {
       uint16_t marginThreshold = margin - threshold;
@@ -194,27 +219,30 @@ void chkHandCollision(void *pvParameter) {
         hysteresis = false;
       } else if (fsrFeedback.pinkyFeedbackGrams <= (marginThreshold)) {
         hysteresis = false;
+      } else if (fsrFeedback.palmFeedbackGrams <= (marginThreshold)) {
+        hysteresis = false;
+      } else {
+        uint16_t marginThreshold = margin + threshold;
+        if (fsrFeedback.indexFeedbackGrams >= (marginThreshold)) {
+          hysteresis = true;
+        } else if (fsrFeedback.middleFeedbackGrams >= (marginThreshold)) {
+          hysteresis = true;
+        } else if (fsrFeedback.thumbFeedbackGrams >= (marginThreshold)) {
+          hysteresis = true;
+        } else if (fsrFeedback.ringFeedbackGrams >= (marginThreshold)) {
+          hysteresis = true;
+        } else if (fsrFeedback.pinkyFeedbackGrams >= (marginThreshold)) {
+          hysteresis = true;
+        } else if (fsrFeedback.palmFeedbackGrams >= (marginThreshold)) {
+          hysteresis = true;
+        }
       }
-    } else {
-      uint16_t marginThreshold = margin + threshold;
-      if (fsrFeedback.indexFeedbackGrams >= (marginThreshold)) {
-        hysteresis = true;
-      } else if (fsrFeedback.middleFeedbackGrams >= (marginThreshold)) {
-        hysteresis = true;
-      } else if (fsrFeedback.thumbFeedbackGrams >= (marginThreshold)) {
-        hysteresis = true;
-      } else if (fsrFeedback.ringFeedbackGrams >= (marginThreshold)) {
-        hysteresis = true;
-      } else if (fsrFeedback.pinkyFeedbackGrams >= (marginThreshold)) {
-        hysteresis = true;
-      }
-    }
 
-    // Delays the task for 100 ms (10 Hz)
-    vTaskDelay(100 * portTICK_PERIOD_MS);
+      // Delays the task for 100 ms (10 Hz)
+      vTaskDelay(100 * portTICK_PERIOD_MS);
+    }
   }
 }
-
 /**
  * @brief Sums the current of all servo motors, blocks all servo motors if it
  *        total current is greater than predefined MAX_SERVO_CURRENT
@@ -243,8 +271,8 @@ void chkMotorCurrent(void *pvParameter) {
 }
 
 /**
- * @brief Processes the signals received from the myo armband and determines the
- *        corresponding hand position. Currently implemented using mean absolute
+ * @brief Processes the signals received from the myo armband and determines
+ * the corresponding hand position. Currently implemented using mean absolute
  *        value with a set hysteresis threshold. Will be changed in future
  *        versions to utilized Linear Discriminant Analysis
  *
@@ -322,8 +350,8 @@ void calibrateCurrentSense() {
     pinkyCalibration += spiCurrentSense.pinkyCurrent;
 
     // Short delay to ensure current average is taken over time
-    // delay is used instead of vTaskDelay to ensure no tasks that could change
-    // motor states are running
+    // delay is used instead of vTaskDelay to ensure no tasks that could
+    // change motor states are running
     delay(1);
   }
 
